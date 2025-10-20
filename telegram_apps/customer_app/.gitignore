@@ -1,0 +1,8 @@
+**File: `/telegram_apps/customer_app/.gitignore`**
+```
+node_modules/
+dist/
+.env
+.env.local
+*.log
+.DS_Store
