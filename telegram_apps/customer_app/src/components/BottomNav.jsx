@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, Newspaper, ShoppingCart, User } from 'lucide-react';
+import { Home, Newspaper, ShoppingCart, User, Bug } from 'lucide-react';
 import useCartStore from '@/store/cartStore';
 import { cn } from '@/utils/cn';
 
@@ -31,7 +31,12 @@ const BottomNav = () => {
       path: '/profile',
       icon: User,
       label: 'Profile'
-    }
+    },
+    {
+      path: '/debug',
+      icon: Bug,
+      label: 'Debug'
+    },
   ];
 
   const isActive = (path, exact) => {

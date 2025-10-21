@@ -9,6 +9,16 @@ import Orders from './pages/Orders';
 import OrderDetails from './pages/OrdersDetails';
 import Profile from './pages/Profile';
 import Addresses from './pages/Addresses';
+import Debug from './pages/Debug';
+
+// Determine basename for SPA routing. Prefer explicit Vite env, otherwise detect common Telegram subpath.
+const envBase = import.meta.env.VITE_BASE_PATH;
+let basename = '/';
+if (envBase) basename = envBase;
+else if (typeof window !== 'undefined') {
+  // If the app is served under /customer (Telegram WebApp), use that as basename
+  if (window.location.pathname.startsWith('/customer')) basename = '/customer';
+}
 
 const router = createBrowserRouter([
   {
@@ -46,9 +56,13 @@ const router = createBrowserRouter([
       {
         path: 'addresses',
         element: <Addresses />
+      },
+      {
+        path: 'debug',
+        element: <Debug />
       }
     ]
   }
-]);
+], { basename });
 
 export default router;

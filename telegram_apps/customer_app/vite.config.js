@@ -13,17 +13,9 @@ export default defineConfig({
     port: 3001,
     host: true,
     allowedHosts: [
-      'https://desktop-s15n8v0.tailb44327.ts.net',
-      'https://679b0f6d4fbd.ngrok-free.app',
-      'desktop-s15n8v0.tailb44327.ts.net',
-      'https://desktop-s15n8v0.tailb44327.ts.net',
-      'https://679b0f6d4fbd.ngrok-free.app',
-      'legal-otters-like.loca.lt',
-      'https://legal-otters-like.loca.lt',
-      'many-moles-take.loca.lt',
-      'https://many-moles-take.loca.lt',
-      'bright-humans-lose.loca.lt',
-      'https://bright-humans-lose.loca.lt',
+      'https://714497200ed8.ngrok-free.app',
+      '714497200ed8.ngrok-free.app',
+      'https://desktop-s15n8v0.tailb44327.ts.net/',
       'localhost', // Allow localhost
     ]
   },

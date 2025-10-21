@@ -110,6 +110,22 @@ app.get('/health', (req, res) => {
 // Static file serving for uploads
 app.use('/uploads', express.static('uploads'));
 
+// Dev helper: serve customer webapp from backend under /customer if built
+const path = require('path');
+const fs = require('fs');
+const customerDist = path.join(__dirname, '../../telegram_apps/customer_app/dist');
+if (fs.existsSync(customerDist)) {
+  // Serve static assets
+  app.use('/customer', express.static(customerDist));
+
+  // For any /customer/* path, serve index.html (SPA fallback)
+  app.get('/customer/*', (req, res) => {
+    res.sendFile(path.join(customerDist, 'index.html'));
+  });
+
+  logger.info('Serving customer SPA from backend at /customer');
+}
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);

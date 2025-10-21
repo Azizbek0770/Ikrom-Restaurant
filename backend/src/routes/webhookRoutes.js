@@ -4,6 +4,7 @@ const { handleWebhook } = require('../services/paymentService');
 const { logger } = require('../config/database');
 
 const router = express.Router();
+const axios = require('axios');
 
 // Stripe webhook (raw body needed)
 router.post('/stripe',
@@ -59,3 +60,69 @@ router.post('/telegram/delivery',
 );
 
 module.exports = router;
+
+// Dev-only: Echo webhook route to inspect incoming Telegram updates (POST raw JSON)
+// Use only for local debugging; remove or protect in production.
+router.post('/telegram/debug', express.json(), async (req, res) => {
+  try {
+    console.log('DEBUG TELEGRAM UPDATE:', JSON.stringify(req.body));
+    res.json({ received: true, body: req.body });
+  } catch (err) {
+    console.error('Debug webhook error:', err);
+    res.status(500).send('Error');
+  }
+});
+
+// Dev-only: expose current webapp config (TELEGRAM_WEBAPP_URL and ALLOWED_ORIGINS)
+router.get('/config', (req, res) => {
+  res.json({
+    telegram_webapp_url: process.env.TELEGRAM_WEBAPP_URL || null,
+    allowed_origins: process.env.ALLOWED_ORIGINS || null
+  });
+});
+
+// Admin: set Telegram webhook for a bot (customer|delivery)
+router.post('/set/:bot', express.json(), async (req, res) => {
+  try {
+    const bot = req.params.bot;
+    const url = req.body.url || (process.env.API_BASE_URL ? `${process.env.API_BASE_URL}/api/webhooks/telegram/${bot}` : null);
+
+    if (!url) return res.status(400).json({ success: false, message: 'No webhook URL provided and API_BASE_URL not configured' });
+
+    let token;
+    if (bot === 'customer') token = process.env.TELEGRAM_BOT_TOKEN_CUSTOMER;
+    else if (bot === 'delivery') token = process.env.TELEGRAM_BOT_TOKEN_DELIVERY;
+    else return res.status(400).json({ success: false, message: 'Invalid bot, use customer or delivery' });
+
+    if (!token) return res.status(400).json({ success: false, message: 'Bot token not configured in env' });
+
+    const resp = await axios.post(`https://api.telegram.org/bot${token}/setWebhook`, `url=${encodeURIComponent(url)}`, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      timeout: 10000
+    });
+
+    return res.json({ success: true, data: resp.data });
+  } catch (error) {
+    console.error('Set webhook error:', error?.response?.data || error.message || error);
+    return res.status(500).json({ success: false, error: error?.response?.data || error.message });
+  }
+});
+
+// Admin: get webhook info for a bot
+router.get('/info/:bot', async (req, res) => {
+  try {
+    const bot = req.params.bot;
+    let token;
+    if (bot === 'customer') token = process.env.TELEGRAM_BOT_TOKEN_CUSTOMER;
+    else if (bot === 'delivery') token = process.env.TELEGRAM_BOT_TOKEN_DELIVERY;
+    else return res.status(400).json({ success: false, message: 'Invalid bot, use customer or delivery' });
+
+    if (!token) return res.status(400).json({ success: false, message: 'Bot token not configured in env' });
+
+    const resp = await axios.get(`https://api.telegram.org/bot${token}/getWebhookInfo`, { timeout: 10000 });
+    return res.json({ success: true, data: resp.data });
+  } catch (error) {
+    console.error('Get webhook info error:', error?.response?.data || error.message || error);
+    return res.status(500).json({ success: false, error: error?.response?.data || error.message });
+  }
+});
