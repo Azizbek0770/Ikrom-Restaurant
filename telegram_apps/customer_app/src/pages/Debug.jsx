@@ -12,16 +12,49 @@ const Debug = () => {
       const tgUser = telegramService.getUser();
 
       let backendConfig = null;
+      let fetchError = null;
       try {
         const apiBase = import.meta.env.VITE_API_BASE_URL || '';
         const cfgUrl = apiBase.replace(/\/$/, '') + '/webhooks/config';
-        const resp = await fetch(cfgUrl, { credentials: 'include' });
+        
+        console.log('[Debug] Fetching config from:', cfgUrl);
+        const resp = await fetch(cfgUrl, { 
+          credentials: 'include',
+          mode: 'cors',
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+        
+        console.log('[Debug] Response status:', resp.status, resp.statusText);
+        
+        if (!resp.ok) {
+          throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+        }
+        
         backendConfig = await resp.json();
+        console.log('[Debug] Config loaded:', backendConfig);
       } catch (err) {
-        backendConfig = { error: String(err) };
+        console.error('[Debug] Fetch error:', err);
+        fetchError = {
+          message: err.message,
+          name: err.name,
+          stack: err.stack,
+          type: err.constructor.name
+        };
+        backendConfig = { error: String(err), details: fetchError };
       }
 
-      setInfo({ location, referrer, ua, tgUser, backendConfig });
+      setInfo({ 
+        location, 
+        referrer, 
+        ua, 
+        tgUser, 
+        backendConfig,
+        apiBaseUrl: import.meta.env.VITE_API_BASE_URL,
+        basePath: import.meta.env.VITE_BASE_PATH,
+        timestamp: new Date().toISOString()
+      });
     };
 
     gather();

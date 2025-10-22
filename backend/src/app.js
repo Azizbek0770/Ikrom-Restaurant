@@ -7,7 +7,7 @@ const socketIo = require('socket.io');
 require('dotenv').config();
 
 const { testConnection, sequelize, logger } = require('./config/database');
-const { errorHandler, notFound } = require('./middleware/errorhandler');
+const { errorHandler, notFound } = require('./middleware/errorHandler');
 const { generalLimiter } = require('./middleware/rateLimiter');
 const { initializeTelegramBots } = require('./services/telegramService');
 
