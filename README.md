@@ -140,8 +140,8 @@ make seed
 
 1. **Clone and configure:**
 ```bash
-git clone https://github.com/yourusername/food-delivery-platform.git
-cd food-delivery-platform
+git clone https://github.com/Azizbek0770/Ikrom-Restaurant.git
+cd Ikrom-Restaurant
 cp .env.example .env
 ```
 
