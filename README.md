@@ -561,9 +561,9 @@ NODE_ENV=development
 
 ### Get Help
 
-- 📧 Email: support@yourrestaurant.com
-- 💬 Telegram: @your_support
-- 🐛 Issues: [GitHub Issues](https://github.com/yourusername/food-delivery-platform/issues)
+- 📧 Email: azizchik462@gmail.com
+- 💬 Telegram: @dbulett
+- 🐛 Issues: [GitHub Issues](https://github.com/Azizbek0770/Ikrom-Restaurnat/issues)
 
 ## 📄 License
 
