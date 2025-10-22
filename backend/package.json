@@ -9,7 +9,8 @@
     "test": "jest --coverage --verbose",
     "test:watch": "jest --watch",
     "migrate": "node src/scripts/migrate.js",
-    "seed": "node src/scripts/seed.js"
+    "seed": "node src/scripts/seed.js",
+    "fix-duplicates": "node src/scripts/fixDuplicates.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.22.0",

@@ -157,6 +157,58 @@ const startServer = async () => {
       process.exit(1);
     }
 
+    // Clean up duplicates before syncing (prevents unique constraint violations)
+    try {
+      await sequelize.query(`
+        DO $$
+        DECLARE
+          duplicate_value VARCHAR;
+        BEGIN
+          -- Fix duplicate telegram_id values (keep oldest, nullify others)
+          FOR duplicate_value IN 
+            SELECT telegram_id 
+            FROM users 
+            WHERE telegram_id IS NOT NULL 
+            GROUP BY telegram_id 
+            HAVING COUNT(*) > 1
+          LOOP
+            UPDATE users 
+            SET telegram_id = NULL 
+            WHERE telegram_id = duplicate_value 
+              AND id NOT IN (
+                SELECT id FROM users 
+                WHERE telegram_id = duplicate_value 
+                ORDER BY created_at ASC 
+                LIMIT 1
+              );
+          END LOOP;
+          
+          -- Fix duplicate email values (keep oldest, nullify others)
+          FOR duplicate_value IN 
+            SELECT email 
+            FROM users 
+            WHERE email IS NOT NULL 
+            GROUP BY email 
+            HAVING COUNT(*) > 1
+          LOOP
+            UPDATE users 
+            SET email = NULL 
+            WHERE email = duplicate_value 
+              AND id NOT IN (
+                SELECT id FROM users 
+                WHERE email = duplicate_value 
+                ORDER BY created_at ASC 
+                LIMIT 1
+              );
+          END LOOP;
+        END$$;
+      `);
+      logger.info('✅ Duplicate cleanup completed');
+    } catch (cleanupError) {
+      // If cleanup fails (e.g., table doesn't exist yet), continue
+      logger.warn('Duplicate cleanup skipped:', cleanupError.message);
+    }
+
     // Sync database (in development)
     if (process.env.NODE_ENV === 'development') {
       await sequelize.sync({ alter: true });
