@@ -40,7 +40,14 @@ const migrate = async () => {
     const runRawMigration = async () => {
       const sqlPath = path.join(__dirname, '../../sql/migration.sql');
       logger.info(`Running raw migration from ${sqlPath}`);
-      const sql = await fs.readFile(sqlPath, 'utf8'); 
+      let sql = await fs.readFile(sqlPath, 'utf8');
+
+      // Small safety adjustments: ensure migrations that would add NOT NULL columns without defaults
+      // are made nullable or include defaults to avoid failing on existing data.
+      // Replace explicit "NOT NULL" on common fields that may already exist.
+      sql = sql.replace(/first_name VARCHAR NOT NULL/g, 'first_name VARCHAR');
+      sql = sql.replace(/created_at TIMESTAMP WITH TIME ZONE NOT NULL/g, 'created_at TIMESTAMP WITH TIME ZONE DEFAULT now()');
+      sql = sql.replace(/updated_at TIMESTAMP WITH TIME ZONE NOT NULL/g, 'updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()');
 
       const transaction = await sequelize.transaction();
       try {

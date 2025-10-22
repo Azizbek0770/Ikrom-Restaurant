@@ -114,7 +114,7 @@ CREATE TABLE IF NOT EXISTS users (
   email VARCHAR UNIQUE,
   phone VARCHAR,
   password_hash TEXT,
-  first_name VARCHAR NOT NULL,
+  first_name VARCHAR,
   last_name VARCHAR,
   role enum_users_role NOT NULL DEFAULT 'customer',
   avatar_url VARCHAR,
@@ -192,8 +192,15 @@ CREATE TABLE IF NOT EXISTS categories (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_categories_is_active ON categories (is_active);
-CREATE INDEX IF NOT EXISTS idx_categories_sort_order ON categories (sort_order);
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='categories' AND column_name='is_active') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_categories_is_active ON categories (is_active)';
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='categories' AND column_name='sort_order') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_categories_sort_order ON categories (sort_order)';
+  END IF;
+END$$;
 
 -- Menu Items
 CREATE TABLE IF NOT EXISTS menu_items (
@@ -216,9 +223,18 @@ CREATE TABLE IF NOT EXISTS menu_items (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_menu_items_category ON menu_items (category_id);
-CREATE INDEX IF NOT EXISTS idx_menu_items_is_available ON menu_items (is_available);
-CREATE INDEX IF NOT EXISTS idx_menu_items_is_featured ON menu_items (is_featured);
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='menu_items' AND column_name='category_id') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_menu_items_category ON menu_items (category_id)';
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='menu_items' AND column_name='is_available') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_menu_items_is_available ON menu_items (is_available)';
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='menu_items' AND column_name='is_featured') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_menu_items_is_featured ON menu_items (is_featured)';
+  END IF;
+END$$;
 
 -- Addresses
 CREATE TABLE IF NOT EXISTS addresses (
@@ -238,8 +254,15 @@ CREATE TABLE IF NOT EXISTS addresses (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_addresses_user_id ON addresses (user_id);
-CREATE INDEX IF NOT EXISTS idx_addresses_is_default ON addresses (is_default);
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='addresses' AND column_name='user_id') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_addresses_user_id ON addresses (user_id)';
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='addresses' AND column_name='is_default') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_addresses_is_default ON addresses (is_default)';
+  END IF;
+END$$;
 
 -- Orders
 CREATE TABLE IF NOT EXISTS orders (
@@ -268,12 +291,27 @@ CREATE TABLE IF NOT EXISTS orders (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_orders_customer_id ON orders (customer_id);
-CREATE INDEX IF NOT EXISTS idx_orders_delivery_partner_id ON orders (delivery_partner_id);
-CREATE INDEX IF NOT EXISTS idx_orders_status ON orders (status);
-CREATE INDEX IF NOT EXISTS idx_orders_payment_status ON orders (payment_status);
-CREATE INDEX IF NOT EXISTS idx_orders_order_number ON orders (order_number);
-CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders (created_at);
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='customer_id') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_orders_customer_id ON orders (customer_id)';
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='delivery_partner_id') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_orders_delivery_partner_id ON orders (delivery_partner_id)';
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='status') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_orders_status ON orders (status)';
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='payment_status') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_orders_payment_status ON orders (payment_status)';
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='order_number') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_orders_order_number ON orders (order_number)';
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='created_at') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders (created_at)';
+  END IF;
+END$$;
 
 -- Order Items
 CREATE TABLE IF NOT EXISTS order_items (
@@ -288,8 +326,15 @@ CREATE TABLE IF NOT EXISTS order_items (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items (order_id);
-CREATE INDEX IF NOT EXISTS idx_order_items_menu_item_id ON order_items (menu_item_id);
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='order_items' AND column_name='order_id') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items (order_id)';
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='order_items' AND column_name='menu_item_id') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_order_items_menu_item_id ON order_items (menu_item_id)';
+  END IF;
+END$$;
 
 -- Deliveries
 CREATE TABLE IF NOT EXISTS deliveries (
@@ -314,9 +359,18 @@ CREATE TABLE IF NOT EXISTS deliveries (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_deliveries_order_id ON deliveries (order_id);
-CREATE INDEX IF NOT EXISTS idx_deliveries_delivery_partner_id ON deliveries (delivery_partner_id);
-CREATE INDEX IF NOT EXISTS idx_deliveries_status ON deliveries (status);
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='deliveries' AND column_name='order_id') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_deliveries_order_id ON deliveries (order_id)';
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='deliveries' AND column_name='delivery_partner_id') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_deliveries_delivery_partner_id ON deliveries (delivery_partner_id)';
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='deliveries' AND column_name='status') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_deliveries_status ON deliveries (status)';
+  END IF;
+END$$;
 
 -- Notifications
 CREATE TABLE IF NOT EXISTS notifications (
@@ -333,10 +387,21 @@ CREATE TABLE IF NOT EXISTS notifications (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications (user_id);
-CREATE INDEX IF NOT EXISTS idx_notifications_order_id ON notifications (order_id);
-CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications (is_read);
-CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications (created_at);
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notifications' AND column_name='user_id') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications (user_id)';
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notifications' AND column_name='order_id') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_notifications_order_id ON notifications (order_id)';
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notifications' AND column_name='is_read') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications (is_read)';
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notifications' AND column_name='created_at') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications (created_at)';
+  END IF;
+END$$;
 
 -- Banners (site banners / small news banners)
 CREATE TABLE IF NOT EXISTS banners (
@@ -473,12 +538,25 @@ DO $$
 BEGIN
   -- users.role
   BEGIN
-    ALTER TABLE users ALTER COLUMN role DROP DEFAULT;
-  EXCEPTION WHEN OTHERS THEN NULL; END;
-  BEGIN
-    ALTER TABLE users ALTER COLUMN role TYPE enum_users_role USING (role::text::enum_users_role);
-    ALTER TABLE users ALTER COLUMN role SET DEFAULT 'customer'::enum_users_role;
-    ALTER TABLE users ALTER COLUMN role SET NOT NULL;
+    -- Normalize existing values to a safe set before converting type
+    -- Set NULL or unknown roles to 'customer' to ensure cast will succeed
+    BEGIN
+      UPDATE users SET role = 'customer' WHERE role IS NULL OR role NOT IN ('customer','delivery','admin');
+    EXCEPTION WHEN OTHERS THEN NULL; END;
+
+    -- Ensure enum type exists
+    BEGIN
+      PERFORM 1 FROM pg_type WHERE typname = 'enum_users_role';
+    EXCEPTION WHEN OTHERS THEN NULL; END;
+
+    -- Now alter the column type safely and then set default and not null
+    BEGIN
+      -- Create enum type if missing (idempotent)
+      DO $$ BEGIN CREATE TYPE IF NOT EXISTS enum_users_role AS ENUM ('customer','delivery','admin'); EXCEPTION WHEN duplicate_object THEN NULL; END$$;
+      ALTER TABLE users ALTER COLUMN role TYPE enum_users_role USING (role::text::enum_users_role);
+      ALTER TABLE users ALTER COLUMN role SET DEFAULT 'customer'::enum_users_role;
+      ALTER TABLE users ALTER COLUMN role SET NOT NULL;
+    EXCEPTION WHEN OTHERS THEN NULL; END;
   EXCEPTION WHEN OTHERS THEN NULL; END;
 
   -- orders.status

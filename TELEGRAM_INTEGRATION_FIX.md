@@ -110,14 +110,14 @@ Update `backend/.env` and `telegram_apps/customer_app/.env` with your actual ngr
 **Or manually:**
 ```bash
 # Set customer bot webhook
-curl -X POST https://backend.ngrok-free.app/api/webhooks/set/customer \
+curl -X POST https://e649883cdf88.ngrok-free.app/api/webhooks/set/customer \
   -H "Content-Type: application/json" \
-  -d '{"url": "https://backend.ngrok-free.app/api/webhooks/telegram/customer"}'
+  -d '{"url": "https://e649883cdf88.ngrok-free.app/api/webhooks/telegram/customer"}'
 
 # Set delivery bot webhook
-curl -X POST https://backend.ngrok-free.app/api/webhooks/set/delivery \
+curl -X POST https://e649883cdf88.ngrok-free.app/api/webhooks/set/delivery \
   -H "Content-Type: application/json" \
-  -d '{"url": "https://backend.ngrok-free.app/api/webhooks/telegram/delivery"}'
+  -d '{"url": "https://e649883cdf88.ngrok-free.app/api/webhooks/telegram/delivery"}'
 ```
 
 ### Step 5: Verify Webhooks

@@ -35,10 +35,9 @@ const User = sequelize.define('User', {
   },
   first_name: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
     validate: {
-      notEmpty: true,
-      len: [1, 100]
+      len: [0, 100]
     }
   },
   last_name: {
@@ -71,6 +70,15 @@ const User = sequelize.define('User', {
   },
   refresh_token: {
     type: DataTypes.TEXT,
+    allowNull: true
+  }
+  ,
+  created_at: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  updated_at: {
+    type: DataTypes.DATE,
     allowNull: true
   }
 }, {
