@@ -126,6 +126,54 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
+-- Clean up duplicate telegram_id values before applying unique constraint
+-- This keeps the oldest record and nullifies telegram_id for duplicates
+DO $$
+DECLARE
+  duplicate_telegram_id VARCHAR;
+BEGIN
+  -- Find and fix duplicate telegram_id values
+  FOR duplicate_telegram_id IN 
+    SELECT telegram_id 
+    FROM users 
+    WHERE telegram_id IS NOT NULL 
+    GROUP BY telegram_id 
+    HAVING COUNT(*) > 1
+  LOOP
+    -- Keep the oldest record, nullify telegram_id for others
+    UPDATE users 
+    SET telegram_id = NULL 
+    WHERE telegram_id = duplicate_telegram_id 
+      AND id NOT IN (
+        SELECT id FROM users 
+        WHERE telegram_id = duplicate_telegram_id 
+        ORDER BY created_at ASC 
+        LIMIT 1
+      );
+    
+    RAISE NOTICE 'Fixed duplicate telegram_id: %', duplicate_telegram_id;
+  END LOOP;
+END$$;
+
+-- Ensure unique constraint exists
+DO $$
+BEGIN
+  -- Drop existing constraint if it exists
+  IF EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'users_telegram_id_key' 
+    AND conrelid = 'users'::regclass
+  ) THEN
+    ALTER TABLE users DROP CONSTRAINT users_telegram_id_key;
+  END IF;
+  
+  -- Add unique constraint
+  ALTER TABLE users ADD CONSTRAINT users_telegram_id_key UNIQUE (telegram_id);
+EXCEPTION 
+  WHEN OTHERS THEN 
+    RAISE NOTICE 'Unique constraint already exists or could not be added';
+END$$;
+
 CREATE INDEX IF NOT EXISTS idx_users_telegram_id ON users (telegram_id);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users (role);
@@ -335,6 +383,53 @@ BEGIN
   END LOOP;
 END$$;
 
+-- IMPORTANT: Clean up duplicate telegram_id and email values BEFORE constraint application
+-- This handles cases where data was inserted before unique constraints were in place
+DO $$
+DECLARE
+  duplicate_value VARCHAR;
+BEGIN
+  -- Fix duplicate telegram_id values (keep oldest, nullify others)
+  FOR duplicate_value IN 
+    SELECT telegram_id 
+    FROM users 
+    WHERE telegram_id IS NOT NULL 
+    GROUP BY telegram_id 
+    HAVING COUNT(*) > 1
+  LOOP
+    UPDATE users 
+    SET telegram_id = NULL 
+    WHERE telegram_id = duplicate_value 
+      AND id NOT IN (
+        SELECT id FROM users 
+        WHERE telegram_id = duplicate_value 
+        ORDER BY created_at ASC 
+        LIMIT 1
+      );
+    RAISE NOTICE 'Cleaned duplicate telegram_id: %', duplicate_value;
+  END LOOP;
+  
+  -- Fix duplicate email values (keep oldest, nullify others)
+  FOR duplicate_value IN 
+    SELECT email 
+    FROM users 
+    WHERE email IS NOT NULL 
+    GROUP BY email 
+    HAVING COUNT(*) > 1
+  LOOP
+    UPDATE users 
+    SET email = NULL 
+    WHERE email = duplicate_value 
+      AND id NOT IN (
+        SELECT id FROM users 
+        WHERE email = duplicate_value 
+        ORDER BY created_at ASC 
+        LIMIT 1
+      );
+    RAISE NOTICE 'Cleaned duplicate email: %', duplicate_value;
+  END LOOP;
+END$$;
+
 -- Ensure existing enum-typed columns (from prior runs or different enum names) are converted safely to the new enum types
 DO $$
 BEGIN
@@ -429,6 +524,39 @@ BEGIN
   BEGIN
     ALTER TABLE notifications ALTER COLUMN type TYPE enum_notifications_type USING (type::text::enum_notifications_type);
   EXCEPTION WHEN OTHERS THEN NULL; END;
+END$$;
+
+-- Final step: Ensure unique constraints are properly set on users table
+-- This prevents issues when Sequelize tries to sync the model
+DO $$
+BEGIN
+  -- Ensure telegram_id unique constraint
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'users_telegram_id_key' 
+    AND conrelid = 'users'::regclass
+  ) THEN
+    BEGIN
+      ALTER TABLE users ADD CONSTRAINT users_telegram_id_key UNIQUE (telegram_id);
+      RAISE NOTICE 'Added unique constraint on telegram_id';
+    EXCEPTION WHEN unique_violation THEN
+      RAISE NOTICE 'Unique constraint on telegram_id already exists or has duplicates';
+    END;
+  END IF;
+  
+  -- Ensure email unique constraint
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'users_email_key' 
+    AND conrelid = 'users'::regclass
+  ) THEN
+    BEGIN
+      ALTER TABLE users ADD CONSTRAINT users_email_key UNIQUE (email);
+      RAISE NOTICE 'Added unique constraint on email';
+    EXCEPTION WHEN unique_violation THEN
+      RAISE NOTICE 'Unique constraint on email already exists or has duplicates';
+    END;
+  END IF;
 END$$;
 
 -- End of migration.sql
