@@ -9,6 +9,7 @@
     "test": "jest --coverage --verbose",
     "test:watch": "jest --watch",
     "migrate": "node src/scripts/migrate.js",
+    "migrate:sales-count": "node src/scripts/addSalesCount.js",
     "seed": "node src/scripts/seed.js",
     "fix-duplicates": "node src/scripts/fixDuplicates.js"
   },

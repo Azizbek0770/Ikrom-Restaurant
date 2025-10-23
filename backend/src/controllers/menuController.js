@@ -34,7 +34,7 @@ const getMenuItems = async (req, res, next) => {
         as: 'category',
         attributes: ['id', 'name', 'name_uz', 'name_ru']
       }],
-      order: [['sort_order', 'ASC'], ['name', 'ASC']]
+      order: [['sales_count', 'DESC'], ['sort_order', 'ASC'], ['name', 'ASC']]
     });
 
     res.json({

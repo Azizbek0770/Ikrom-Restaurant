@@ -165,7 +165,7 @@ const LightboxModal = ({ dishes, index, onClose, onAdd }) => {
 // ==========================
 // MenuItem
 // ==========================
-const MenuItem = ({ item, onAddToCart, onImageClick }) => {
+const MenuItem = ({ item, onAddToCart, onImageClick, showBestseller }) => {
   const [isAdding, setIsAdding] = useState(false);
 
   const handleAdd = () => {
@@ -176,7 +176,13 @@ const MenuItem = ({ item, onAddToCart, onImageClick }) => {
   };
 
   return (
-    <div className="bg-white/80 dark:bg-gray-900/70 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-md transition-all">
+    <div className="relative bg-white/80 dark:bg-gray-900/70 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-md transition-all">
+      {showBestseller && (
+        <div className="absolute top-2 left-2 z-10 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg flex items-center gap-1">
+          <span>🔥</span>
+          <span>HOT</span>
+        </div>
+      )}
       <img
         src={item.image_url}
         alt={item.name}
@@ -349,7 +355,14 @@ const Menu = () => {
           </div>
         </div>
       )}
-
+      {/* Section Header with Hot Sales indicator */}
+      {!searchQuery && (
+        <div className="px-3 pt-3">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-2xl">🔥</span>
+            <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+              Most Popular Items
+=======
       {/* Hot Sales Section */}
       {!searchQuery && !selectedCategory && featuredItems.length > 0 && (
         <div className="px-3 pt-3">
@@ -390,6 +403,7 @@ const Menu = () => {
               item={item}
               onAddToCart={handleAddToCart}
               onImageClick={() => setLightboxIndex(i)}
+              showBestseller={!searchQuery && i < 6 && (item.sales_count || 0) > 0}
             />
           ))}
         </div>
