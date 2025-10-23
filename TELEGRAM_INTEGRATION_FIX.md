@@ -135,7 +135,7 @@ curl https://ce051dc56fd3.ngrok-free.app/api/webhooks/info/delivery
 ### Test 1: CORS Preflight
 ```bash
 curl -X OPTIONS https://ce051dc56fd3.ngrok-free.app/api/auth/telegram \
-  -H "Origin: https://7vlpc4kpan.eu.loclx.io" \
+  -H "Origin: https://she8ngfnhd.eu.loclx.io" \
   -H "Access-Control-Request-Method: POST" \
   -i
 ```
@@ -149,7 +149,7 @@ Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
 ### Test 2: Auth Endpoint
 ```bash
 curl -X POST https://ce051dc56fd3.ngrok-free.app/api/auth/telegram \
-  -H "Origin: https://7vlpc4kpan.eu.loclx.io" \
+  -H "Origin: https://she8ngfnhd.eu.loclx.io" \
   -H "Content-Type: application/json" \
   -d '{
     "telegram_id": "123456789",

@@ -367,7 +367,7 @@ const Menu = () => {
       {/* Top Sales Info Banner */}
       {!searchQuery && !selectedCategory && menuItems.length > 0 && (
         <div className="px-3 pt-3 pb-2">
-          <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 dark:from-orange-500/20 dark:to-red-500/20 rounded-xl p-4 border border-orange-200 dark:border-orange-800">
+          {/* <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 dark:from-orange-500/20 dark:to-red-500/20 rounded-xl p-4 border border-orange-200 dark:border-orange-800">
             <div className="flex items-center gap-3">
               <div className="text-3xl">🔥</div>
               <div>
@@ -377,7 +377,7 @@ const Menu = () => {
                 </p>
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
       )}
 
