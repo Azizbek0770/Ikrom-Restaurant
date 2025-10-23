@@ -248,6 +248,11 @@ const Menu = () => {
     },
   });
 
+  // Get featured items for Hot Sales section
+  const featuredItems = useMemo(() => {
+    return (menuItems || []).filter(item => item.is_featured);
+  }, [menuItems]);
+
   const processedItems = useMemo(() => {
     let items = menuItems || [];
     if (searchQuery)
@@ -350,7 +355,6 @@ const Menu = () => {
           </div>
         </div>
       )}
-
       {/* Section Header with Hot Sales indicator */}
       {!searchQuery && (
         <div className="px-3 pt-3">
@@ -358,6 +362,33 @@ const Menu = () => {
             <span className="text-2xl">🔥</span>
             <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300">
               Most Popular Items
+=======
+      {/* Hot Sales Section */}
+      {!searchQuery && !selectedCategory && featuredItems.length > 0 && (
+        <div className="px-3 pt-3">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <span className="text-2xl">🔥</span>
+              Hot Sales
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            {featuredItems.slice(0, 4).map((item, i) => (
+              <div key={item.id} className="relative">
+                <MenuItem
+                  item={item}
+                  onAddToCart={handleAddToCart}
+                  onImageClick={() => setLightboxIndex(i)}
+                />
+                <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg animate-pulse">
+                  HOT
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-800 pt-3 mb-1">
+            <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+              All Menu Items
             </h2>
           </div>
         </div>
