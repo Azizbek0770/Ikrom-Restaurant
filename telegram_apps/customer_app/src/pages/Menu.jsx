@@ -178,15 +178,15 @@ const MenuItem = ({ item, onAddToCart, onImageClick, showBestseller }) => {
   return (
     <div className="relative bg-white/80 dark:bg-gray-900/70 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-md transition-all">
       {showBestseller && (
-        <div className="absolute top-2 left-2 z-10 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg flex items-center gap-1">
-          <span>🔥</span>
-          <span>HOT</span>
+        <div className="absolute top-2 left-2 z-10 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg flex items-center gap-1 animate-badgePulse">
+          <span>⭐</span>
+          <span>Top 10</span>
         </div>
       )}
       <img
         src={item.image_url}
         alt={item.name}
-        className="w-full h-32 object-cover cursor-pointer"
+        className="w-full h-36 object-cover cursor-pointer"
         onClick={onImageClick}
       />
       <div className="p-3">
@@ -255,12 +255,22 @@ const Menu = () => {
 
   const processedItems = useMemo(() => {
     let items = menuItems || [];
-    if (searchQuery)
+    if (searchQuery) {
       items = items.filter(
         (i) =>
           i.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           i.description?.toLowerCase().includes(searchQuery.toLowerCase())
       );
+    }
+    items = [...items].sort((a, b) => {
+      const aSales = a.sales_count ?? 0;
+      const bSales = b.sales_count ?? 0;
+      if (bSales !== aSales) return bSales - aSales;
+      const aOrder = a.sort_order ?? 0;
+      const bOrder = b.sort_order ?? 0;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return (a.name || '').localeCompare(b.name || '');
+    });
     return items.slice(0, limit);
   }, [menuItems, searchQuery, limit]);
 
@@ -396,7 +406,7 @@ const Menu = () => {
               item={item}
               onAddToCart={handleAddToCart}
               onImageClick={() => setLightboxIndex(i)}
-              showBestseller={!searchQuery && i < 6 && (item.sales_count || 0) > 0}
+              showBestseller={i < 10 && (item.sales_count || 0) > 0}
             />
           ))}
         </div>
@@ -424,5 +434,7 @@ style.innerHTML = `
 @keyframes scaleIn { from { transform: scale(0.95); opacity: 0 } to { transform: scale(1); opacity: 1 } }
 .animate-fadeIn { animation: fadeIn 0.25s ease-out; }
 .animate-scaleIn { animation: scaleIn 0.25s ease-out; }
+@keyframes badgePulse { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-1px) scale(1.06); } }
+.animate-badgePulse { animation: badgePulse 1.4s ease-in-out infinite; }
 `;
 document.head.appendChild(style);
