@@ -75,13 +75,19 @@ const MenuItem = sequelize.define('MenuItem', {
   sort_order: {
     type: DataTypes.INTEGER,
     defaultValue: 0
+  },
+  sales_count: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    comment: 'Total number of times this item has been ordered'
   }
 }, {
   tableName: 'menu_items',
   indexes: [
     { fields: ['category_id'] },
     { fields: ['is_available'] },
-    { fields: ['is_featured'] }
+    { fields: ['is_featured'] },
+    { fields: ['sales_count'] }
   ]
 });
 

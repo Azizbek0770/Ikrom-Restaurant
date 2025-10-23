@@ -339,6 +339,14 @@ const updateOrderStatus = async (req, res, next) => {
     switch (status) {
       case 'confirmed':
         updates.accepted_at = now;
+        // Increment sales_count for each menu item in the order
+        const orderItems = await OrderItem.findAll({ where: { order_id: id } });
+        for (const item of orderItems) {
+          await MenuItem.increment('sales_count', {
+            by: item.quantity,
+            where: { id: item.menu_item_id }
+          });
+        }
         break;
       case 'preparing':
         updates.preparing_at = now;
