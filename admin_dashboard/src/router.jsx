@@ -62,13 +62,15 @@ const router = createBrowserRouter([
       {
         path: 'deliveries',
         element: <Deliveries />
-      }
-      ,
+      },
       {
         path: 'users',
         element: <Users />
-      }
-      ,
+      },
+      {
+        path: 'news',
+        element: React.createElement(React.lazy(() => import('./pages/News')))
+      },
       {
         path: 'banners',
         element: React.createElement(React.lazy(() => import('./pages/Banners')))

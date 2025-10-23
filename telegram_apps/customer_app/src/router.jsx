@@ -3,6 +3,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import Layout from './components/Layout';
 import Menu from './pages/Menu';
 import News from './pages/News';
+import NewsDetail from './pages/NewsDetail';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import Orders from './pages/Orders';
@@ -32,6 +33,10 @@ const router = createBrowserRouter([
       {
         path: 'news',
         element: <News />
+      },
+      {
+        path: 'news/:id',
+        element: <NewsDetail />
       },
       {
         path: 'cart',
