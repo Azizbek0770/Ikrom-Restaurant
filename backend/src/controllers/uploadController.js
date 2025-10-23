@@ -6,6 +6,7 @@ const { Category, MenuItem, User } = require('../models');
 require('dotenv').config();
 
 const USE_SUPABASE = !!process.env.SUPABASE_URL || !!process.env.SUPABASE_DATABASE_URL;
+const { supabaseService, supabaseAnon } = require('../config/supabase');
 
 /**
  * Upload single image
@@ -25,8 +26,12 @@ exports.uploadImage = async (req, res) => {
       // Upload to Supabase storage
       const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'uploads';
       const filename = `${type}/${Date.now()}-${req.file.originalname}`;
+      const client = supabaseService || supabaseAnon;
+      if (!client) {
+        throw new Error('Supabase client not configured');
+      }
 
-      const { data, error } = await supabase.storage
+      const { data, error } = await client.storage
         .from(bucket)
         .upload(filename, req.file.buffer, {
           contentType: req.file.mimetype,
@@ -38,10 +43,18 @@ exports.uploadImage = async (req, res) => {
         throw error;
       }
 
-      // Get public URL
-      const { data: publicData } = supabase.storage.from(bucket).getPublicUrl(filename);
-      // If Supabase returns object with publicUrl or publicURL depending on SDK, normalize
-      const imageUrl = publicData?.publicUrl || publicData?.publicURL || `${process.env.SUPABASE_PUBLIC_URL || ''}/${bucket}/${filename}`;
+      // Get public URL - prefer SDK returned public url, otherwise fall back to SUPABASE_PUBLIC_URL
+      let imageUrl = null;
+      try {
+        const { data: publicData } = client.storage.from(bucket).getPublicUrl(filename);
+        imageUrl = publicData?.publicUrl || publicData?.publicURL || null;
+      } catch (err) {
+        // ignore and fallback
+      }
+
+      if (!imageUrl) {
+        imageUrl = `${process.env.SUPABASE_PUBLIC_URL || ''}/${bucket}/${filename}`;
+      }
 
       logger.info(`Image uploaded to Supabase: ${imageUrl}`);
 
