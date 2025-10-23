@@ -7,7 +7,9 @@ import {
   Truck, 
   Users,
   Settings,
-  LogOut
+  LogOut,
+  Newspaper,
+  ImageIcon
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import useAuthStore from '@/store/authStore';
@@ -19,7 +21,8 @@ const Sidebar = () => {
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Categories', href: '/categories', icon: UtensilsCrossed },
     { name: 'Menu', href: '/menu', icon: UtensilsCrossed },
-    { name: 'Banners', href: '/banners', icon: Settings },
+    { name: 'News', href: '/news', icon: Newspaper },
+    { name: 'Banners', href: '/banners', icon: ImageIcon },
     { name: 'Orders', href: '/orders', icon: ShoppingBag },
     { name: 'Deliveries', href: '/deliveries', icon: Truck },
     { name: 'Users', href: '/users', icon: Users },

@@ -8,6 +8,7 @@ const OrderItem = require('./OrderItem');
 const Delivery = require('./Delivery');
 const Notification = require('./Notification');
 const Banner = require('./Banner');
+const News = require('./News');
 
 // Define associations
 User.hasMany(Address, { foreignKey: 'user_id', as: 'addresses' });
@@ -42,6 +43,10 @@ Notification.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 Order.hasMany(Notification, { foreignKey: 'order_id', as: 'notifications' });
 Notification.belongsTo(Order, { foreignKey: 'order_id', as: 'order' });
 
+// News and Banner associations
+News.hasMany(Banner, { foreignKey: 'news_id', as: 'banners' });
+Banner.belongsTo(News, { foreignKey: 'news_id', as: 'news' });
+
 const models = {
   User,
   Category,
@@ -52,6 +57,7 @@ const models = {
   Delivery,
   Notification,
   Banner,
+  News,
   sequelize
 };
 

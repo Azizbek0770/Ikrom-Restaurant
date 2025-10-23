@@ -1,11 +1,17 @@
-const { Banner } = require('../models');
+const { Banner, News } = require('../models');
 
 // GET /api/banners (public active banners)
 const getActiveBanners = async (req, res, next) => {
   try {
     const banners = await Banner.findAll({
       where: { is_active: true },
-      order: [['sort_order', 'ASC']]
+      order: [['sort_order', 'ASC']],
+      include: [{
+        model: News,
+        as: 'news',
+        attributes: ['id', 'title', 'excerpt', 'image_url'],
+        required: false
+      }]
     });
 
     res.json({ success: true, data: { banners } });
@@ -17,7 +23,15 @@ const getActiveBanners = async (req, res, next) => {
 // Admin: list banners
 const listBanners = async (req, res, next) => {
   try {
-    const banners = await Banner.findAll({ order: [['sort_order', 'ASC']] });
+    const banners = await Banner.findAll({ 
+      order: [['sort_order', 'ASC']],
+      include: [{
+        model: News,
+        as: 'news',
+        attributes: ['id', 'title', 'is_published'],
+        required: false
+      }]
+    });
     res.json({ success: true, data: { banners } });
   } catch (error) {
     next(error);
@@ -27,8 +41,17 @@ const listBanners = async (req, res, next) => {
 // Admin: create
 const createBanner = async (req, res, next) => {
   try {
-    const { title, subtitle, image_url, link, sort_order, is_active } = req.body;
-    const banner = await Banner.create({ title, subtitle, image_url, link, sort_order, is_active });
+    const { title, subtitle, image_url, link, sort_order, is_active, banner_type, news_id } = req.body;
+    const banner = await Banner.create({ 
+      title, 
+      subtitle, 
+      image_url, 
+      link, 
+      sort_order, 
+      is_active,
+      banner_type: banner_type || 'standard',
+      news_id: banner_type === 'news_linked' ? news_id : null
+    });
     res.status(201).json({ success: true, data: { banner } });
   } catch (error) {
     next(error);
@@ -42,6 +65,12 @@ const updateBanner = async (req, res, next) => {
     const updates = req.body;
     const banner = await Banner.findByPk(id);
     if (!banner) return res.status(404).json({ success: false, message: 'Banner not found' });
+    
+    // If changing to standard type, clear news_id
+    if (updates.banner_type === 'standard') {
+      updates.news_id = null;
+    }
+    
     await banner.update(updates);
     res.json({ success: true, data: { banner } });
   } catch (error) {
