@@ -1,3 +1,4 @@
+// --- Dependencies ---
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -11,7 +12,7 @@ const { errorHandler, notFound } = require('./middleware/errorHandler');
 const { generalLimiter } = require('./middleware/rateLimiter');
 const { initializeTelegramBots } = require('./services/telegramService');
 
-// Import routes
+// --- Import routes ---
 const authRoutes = require('./routes/authRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const menuRoutes = require('./routes/menuRoutes');
@@ -27,25 +28,26 @@ const indexRoutes = require('./routes/index');
 const app = express();
 const server = http.createServer(app);
 
-// Socket.IO setup
-// Derive allowed origins from env once and reuse for both Socket.IO and Express CORS
+// --- Allowed Origins ---
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
   : ['*'];
 
+console.log('🔍 Allowed Origins:', allowedOrigins);
+
+// --- Socket.IO Setup ---
 const io = socketIo(server, {
   cors: {
-    origin: allowedOrigins.indexOf('*') !== -1 ? '*' : allowedOrigins,
+    origin: allowedOrigins.includes('*') ? '*' : allowedOrigins,
     methods: ['GET', 'POST'],
     credentials: true
   }
 });
 
-// Make io accessible globally
 global.io = io;
 app.set('io', io);
 
-// Socket.IO connection handling
+// --- Socket.IO Events ---
 io.on('connection', (socket) => {
   logger.info(`Client connected: ${socket.id}`);
 
@@ -64,69 +66,87 @@ io.on('connection', (socket) => {
   });
 });
 
-// Middleware
+// --- Middleware ---
 app.use(helmet());
-// Configure Express CORS using the same allowedOrigins derived earlier
-app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (like curl, mobile apps, or server-to-server)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf('*') !== -1) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = `The CORS policy for this site does not allow access from the specified Origin.`;
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
-}));
 
-// Webhook routes (need raw body)
+// --- CORS Setup with Auto Debugging ---
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      console.log('🌐 Incoming Origin:', origin);
+
+      // Allow requests with no origin (like Postman, curl, or Telegram internal)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+        console.log('✅ Origin allowed:', origin);
+        return callback(null, true);
+      } else {
+        console.log('❌ Origin blocked by CORS:', origin);
+        return callback(
+          new Error(
+            'CORS policy does not allow access from this origin: ' + origin
+          ),
+          false
+        );
+      }
+    },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    credentials: true,
+  })
+);
+
+// --- Debug Endpoint ---
+app.get('/api/debug', (req, res) => {
+  res.json({
+    status: 'ok ✅',
+    origin: req.headers.origin || 'No origin header',
+    time: new Date().toISOString(),
+    allowedOrigins,
+  });
+});
+
+// --- Webhook routes (raw body support) ---
 app.use('/api/webhooks', webhookRoutes);
 
-// Regular JSON parsing
+// --- Body Parsers ---
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Logging
+// --- Logging ---
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// Rate limiting
+// --- Rate Limiting ---
 app.use('/api', generalLimiter);
 
-// Health check
+// --- Health Check ---
 app.get('/health', (req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
   });
 });
 
-// Static file serving for uploads
+// --- Static Uploads ---
 app.use('/uploads', express.static('uploads'));
 
-// Dev helper: serve customer webapp from backend under /customer if built
+// --- Serve Customer Webapp (if exists) ---
 const path = require('path');
 const fs = require('fs');
 const customerDist = path.join(__dirname, '../../telegram_apps/customer_app/dist');
 if (fs.existsSync(customerDist)) {
-  // Serve static assets
   app.use('/customer', express.static(customerDist));
-
-  // For any /customer/* path, serve index.html (SPA fallback)
   app.get('/customer/*', (req, res) => {
     res.sendFile(path.join(customerDist, 'index.html'));
   });
-
   logger.info('Serving customer SPA from backend at /customer');
 }
 
-// API Routes
+// --- API Routes ---
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/menu', menuRoutes);
@@ -138,97 +158,64 @@ app.use('/api/users', userRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api', indexRoutes);
 
-// 404 handler
+// --- 404 and Error Handlers ---
 app.use(notFound);
-
-// Error handler
 app.use(errorHandler);
 
-// Database initialization and server start
+// --- Database Initialization & Server Start ---
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   try {
-    // Test database connection
     const dbConnected = await testConnection();
-    
     if (!dbConnected) {
       logger.error('Failed to connect to database. Exiting...');
       process.exit(1);
     }
 
-    // Database sync and pre-sync cleanup are opt-in. By default we DO NOT
-    // modify the database schema automatically. Set `ENABLE_DB_SYNC=true`
-    // in your environment to enable automatic syncing and cleanup (only
-    // recommended for ephemeral/dev environments).
     const enableDbSync = (process.env.ENABLE_DB_SYNC || '').toLowerCase() === 'true';
 
     if (enableDbSync) {
-      // Clean up duplicates before syncing (prevents unique constraint violations)
       try {
         await sequelize.query(`
           DO $$
-          DECLARE
-            duplicate_value VARCHAR;
+          DECLARE duplicate_value VARCHAR;
           BEGIN
-            -- Fix duplicate telegram_id values (keep oldest, nullify others)
             FOR duplicate_value IN 
-              SELECT telegram_id 
-              FROM users 
-              WHERE telegram_id IS NOT NULL 
-              GROUP BY telegram_id 
-              HAVING COUNT(*) > 1
+              SELECT telegram_id FROM users WHERE telegram_id IS NOT NULL GROUP BY telegram_id HAVING COUNT(*) > 1
             LOOP
-              UPDATE users 
-              SET telegram_id = NULL 
-              WHERE telegram_id = duplicate_value 
-                AND id NOT IN (
-                  SELECT id FROM users 
-                  WHERE telegram_id = duplicate_value 
-                  ORDER BY created_at ASC 
-                  LIMIT 1
-                );
+              UPDATE users SET telegram_id = NULL WHERE telegram_id = duplicate_value 
+              AND id NOT IN (
+                SELECT id FROM users WHERE telegram_id = duplicate_value ORDER BY created_at ASC LIMIT 1
+              );
             END LOOP;
-            
-            -- Fix duplicate email values (keep oldest, nullify others)
             FOR duplicate_value IN 
-              SELECT email 
-              FROM users 
-              WHERE email IS NOT NULL 
-              GROUP BY email 
-              HAVING COUNT(*) > 1
+              SELECT email FROM users WHERE email IS NOT NULL GROUP BY email HAVING COUNT(*) > 1
             LOOP
-              UPDATE users 
-              SET email = NULL 
-              WHERE email = duplicate_value 
-                AND id NOT IN (
-                  SELECT id FROM users 
-                  WHERE email = duplicate_value 
-                  ORDER BY created_at ASC 
-                  LIMIT 1
-                );
+              UPDATE users SET email = NULL WHERE email = duplicate_value 
+              AND id NOT IN (
+                SELECT id FROM users WHERE email = duplicate_value ORDER BY created_at ASC LIMIT 1
+              );
             END LOOP;
           END$$;
         `);
         logger.info('✅ Duplicate cleanup completed');
       } catch (cleanupError) {
-        // If cleanup fails (e.g., table doesn't exist yet), continue
         logger.warn('Duplicate cleanup skipped:', cleanupError.message);
       }
 
-      // Sync database (in development)
       if (process.env.NODE_ENV === 'development') {
         await sequelize.sync({ alter: true });
         logger.info('✅ Database synced');
       }
     } else {
-      logger.info('Database sync/skipped: ENABLE_DB_SYNC not enabled; running without schema changes');
+      logger.info('Database sync skipped (ENABLE_DB_SYNC not enabled)');
     }
 
-    // Initialize Telegram bots
+    // --- Initialize Telegram Bots ---
     initializeTelegramBots();
 
-    // Start server
+    // --- Start server ---
     server.listen(PORT, () => {
       logger.info(`✅ Server running on port ${PORT}`);
       logger.info(`✅ Environment: ${process.env.NODE_ENV}`);
@@ -240,26 +227,19 @@ const startServer = async () => {
   }
 };
 
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  logger.info('SIGTERM received, shutting down gracefully...');
-  server.close(async () => {
-    await sequelize.close();
-    logger.info('Server closed');
-    process.exit(0);
+// --- Graceful Shutdown ---
+['SIGTERM', 'SIGINT'].forEach((signal) => {
+  process.on(signal, async () => {
+    logger.info(`${signal} received, shutting down gracefully...`);
+    server.close(async () => {
+      await sequelize.close();
+      logger.info('Server closed');
+      process.exit(0);
+    });
   });
 });
 
-process.on('SIGINT', async () => {
-  logger.info('SIGINT received, shutting down gracefully...');
-  server.close(async () => {
-    await sequelize.close();
-    logger.info('Server closed');
-    process.exit(0);
-  });
-});
-
-// Handle uncaught exceptions
+// --- Error Handling for Uncaught Issues ---
 process.on('uncaughtException', (error) => {
   logger.error('Uncaught Exception:', error);
   process.exit(1);

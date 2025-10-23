@@ -75,9 +75,23 @@ router.post('/telegram/debug', express.json(), async (req, res) => {
 
 // Dev-only: expose current webapp config (TELEGRAM_WEBAPP_URL and ALLOWED_ORIGINS)
 router.get('/config', (req, res) => {
+  // Prefer explicit env value. If missing, try to derive from request origin so
+  // the frontend served via ngrok/loclx can discover correct webapp URL.
+  const envWebapp = process.env.TELEGRAM_WEBAPP_URL || null;
+  const envAllowed = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+  // Derive request origin from headers (prefer Origin, fallback to Referer)
+  const reqOrigin = (req.get('origin') || req.get('referer') || '').split('?')[0].replace(/\/customer.*$/i, '').replace(/\/$/, '');
+
+  const derivedWebapp = reqOrigin ? `${reqOrigin}/customer` : null;
+
+  // Build allowed origins: env list plus the request origin (if present)
+  const allowedSet = new Set(envAllowed);
+  if (reqOrigin) allowedSet.add(reqOrigin);
+
   res.json({
-    telegram_webapp_url: process.env.TELEGRAM_WEBAPP_URL || null,
-    allowed_origins: process.env.ALLOWED_ORIGINS || null
+    telegram_webapp_url: envWebapp || derivedWebapp || null,
+    allowed_origins: Array.from(allowedSet).join(',') || null
   });
 });
 

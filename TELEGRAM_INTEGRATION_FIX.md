@@ -124,18 +124,18 @@ curl -X POST https://e649883cdf88.ngrok-free.app/api/webhooks/set/delivery \
 
 ```bash
 # Check customer bot webhook
-curl https://backend.ngrok-free.app/api/webhooks/info/customer
+curl https://e649883cdf88.ngrok-free.app/api/webhooks/info/customer
 
 # Check delivery bot webhook
-curl https://backend.ngrok-free.app/api/webhooks/info/delivery
+curl https://e649883cdf88.ngrok-free.app/api/webhooks/info/delivery
 ```
 
 ## Runtime Tests
 
 ### Test 1: CORS Preflight
 ```bash
-curl -X OPTIONS https://backend.ngrok-free.app/api/auth/telegram \
-  -H "Origin: https://brh9vuov5x.loclx.io" \
+curl -X OPTIONS https://e649883cdf88.ngrok-free.app/api/auth/telegram \
+  -H "Origin: https://fguowc577w.loclx.io" \
   -H "Access-Control-Request-Method: POST" \
   -i
 ```
@@ -148,8 +148,8 @@ Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
 
 ### Test 2: Auth Endpoint
 ```bash
-curl -X POST https://backend.ngrok-free.app/api/auth/telegram \
-  -H "Origin: https://brh9vuov5x.loclx.io" \
+curl -X POST https://e649883cdf88.ngrok-free.app/api/auth/telegram \
+  -H "Origin: https://fguowc577w.loclx.io" \
   -H "Content-Type: application/json" \
   -d '{
     "telegram_id": "123456789",

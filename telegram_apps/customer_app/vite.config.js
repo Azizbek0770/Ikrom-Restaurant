@@ -13,9 +13,8 @@ export default defineConfig({
     port: 3001,
     host: true,
     allowedHosts: [
-      'https://714497200ed8.ngrok-free.app',
-      '714497200ed8.ngrok-free.app',
-      'https://desktop-s15n8v0.tailb44327.ts.net/',
+      'https://fguowc577w.loclx.io',
+      'fguowc577w.loclx.io',
       'localhost', // Allow localhost
     ]
   },
