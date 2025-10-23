@@ -356,13 +356,6 @@ const Menu = () => {
         </div>
       )}
       {/* Section Header with Hot Sales indicator */}
-      {!searchQuery && (
-        <div className="px-3 pt-3">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-2xl">🔥</span>
-            <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300">
-              Most Popular Items
-=======
       {/* Hot Sales Section */}
       {!searchQuery && !selectedCategory && featuredItems.length > 0 && (
         <div className="px-3 pt-3">

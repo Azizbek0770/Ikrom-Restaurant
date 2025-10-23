@@ -1,8 +1,9 @@
 const fs = require('fs');
 const path = require('path');
-const supabase = require('../config/supabase');
+const { supabaseService, supabaseAnon } = require('../config/supabase');
 require('dotenv').config();
 
+const supabaseClient = supabaseService || supabaseAnon;
 const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'uploads';
 
 // Simple 1x1 PNG placeholders (transparent)
@@ -28,13 +29,13 @@ const upload = async () => {
     for (const file of files) {
       console.log(`Uploading ${file.key} to bucket ${bucket}...`);
 
-      if (!supabase) {
+      if (!supabaseClient) {
         console.warn('Supabase not configured - falling back to local storage');
         await saveLocally(file);
         continue;
       }
 
-      const { data, error } = await supabase.storage.from(bucket).upload(file.key, file.data, {
+      const { data, error } = await supabaseClient.storage.from(bucket).upload(file.key, file.data, {
         contentType: 'image/png',
         upsert: true
       });
