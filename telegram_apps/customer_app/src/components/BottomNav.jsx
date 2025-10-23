@@ -32,11 +32,11 @@ const BottomNav = () => {
       icon: User,
       label: 'Profile'
     },
-    {
-      path: '/debug',
-      icon: Bug,
-      label: 'Debug'
-    },
+    // {
+    //   path: '/debug',
+    //   icon: Bug,
+    //   label: 'Debug'
+    // },
   ];
 
   const isActive = (path, exact) => {
