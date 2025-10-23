@@ -22,7 +22,8 @@ const Debug = () => {
           credentials: 'include',
           mode: 'cors',
           headers: {
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'ngrok-skip-browser-warning': 'true'
           }
         });
         
