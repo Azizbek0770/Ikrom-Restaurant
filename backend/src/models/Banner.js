@@ -23,6 +23,19 @@ const Banner = sequelize.define('Banner', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  banner_type: {
+    type: DataTypes.ENUM('standard', 'news_linked'),
+    defaultValue: 'standard'
+  },
+  news_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'news',
+      key: 'id'
+    },
+    onDelete: 'CASCADE'
+  },
   sort_order: {
     type: DataTypes.INTEGER,
     defaultValue: 0
@@ -35,7 +48,9 @@ const Banner = sequelize.define('Banner', {
   tableName: 'banners',
   indexes: [
     { fields: ['is_active'] },
-    { fields: ['sort_order'] }
+    { fields: ['sort_order'] },
+    { fields: ['banner_type'] },
+    { fields: ['news_id'] }
   ]
 });
 

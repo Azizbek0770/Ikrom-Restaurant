@@ -134,4 +134,13 @@ export const bannersAPI = {
   delete: (id) => api.delete(`/admin/banners/${id}`)
 };
 
+// News API (admin)
+export const newsAPI = {
+  getAll: () => api.get('/news/admin/all'),
+  create: (data) => api.post('/news/admin/create', data),
+  update: (id, data) => api.put(`/news/admin/${id}`, data),
+  delete: (id) => api.delete(`/news/admin/${id}`),
+  togglePublish: (id) => api.patch(`/news/admin/${id}/toggle-publish`)
+};
+
 export default api;

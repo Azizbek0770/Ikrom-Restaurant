@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { categoriesAPI, menuAPI } from '@/services/api';
 import {
   Plus, Search, X, Minus, ChevronLeft, ChevronRight, ZoomIn, ZoomOut
@@ -216,9 +217,110 @@ const MenuItem = ({ item, onAddToCart, onImageClick, topRank }) => {
 };
 
 // ==========================
+// Banner Carousel Component
+// ==========================
+const BannerCarousel = ({ banners }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const navigate = useNavigate();
+  const autoSlideRef = useRef(null);
+
+  useEffect(() => {
+    if (banners.length > 1) {
+      autoSlideRef.current = setInterval(() => {
+        setCurrentIndex((prev) => (prev + 1) % banners.length);
+      }, 5000);
+    }
+    return () => clearInterval(autoSlideRef.current);
+  }, [banners.length]);
+
+  const handlePrev = () => {
+    setCurrentIndex((prev) => (prev - 1 + banners.length) % banners.length);
+    clearInterval(autoSlideRef.current);
+  };
+
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev + 1) % banners.length);
+    clearInterval(autoSlideRef.current);
+  };
+
+  const handleBannerClick = (banner) => {
+    if (banner.banner_type === 'news_linked' && banner.news_id) {
+      navigate(`/news/${banner.news_id}`);
+    } else if (banner.link) {
+      window.open(banner.link, '_blank');
+    }
+  };
+
+  if (!banners || banners.length === 0) return null;
+
+  return (
+    <div className="relative w-full rounded-xl overflow-hidden shadow-md group">
+      {/* Banner Image */}
+      <div 
+        className="relative w-full h-48 cursor-pointer"
+        onClick={() => handleBannerClick(banners[currentIndex])}
+      >
+        <img 
+          src={banners[currentIndex].image_url} 
+          alt={banners[currentIndex].title}
+          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+        />
+        
+        {/* Overlay with text */}
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4">
+          <h3 className="text-white text-lg font-bold mb-1">
+            {banners[currentIndex].title}
+          </h3>
+          {banners[currentIndex].subtitle && (
+            <p className="text-white/90 text-sm line-clamp-2">
+              {banners[currentIndex].subtitle}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Navigation Arrows */}
+      {banners.length > 1 && (
+        <>
+          <button
+            onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition hover:bg-black/70"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); handleNext(); }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition hover:bg-black/70"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+
+          {/* Dots Indicator */}
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-2">
+            {banners.map((_, index) => (
+              <button
+                key={index}
+                onClick={(e) => { e.stopPropagation(); setCurrentIndex(index); clearInterval(autoSlideRef.current); }}
+                className={cn(
+                  'w-2 h-2 rounded-full transition-all',
+                  index === currentIndex 
+                    ? 'bg-white w-4' 
+                    : 'bg-white/50 hover:bg-white/75'
+                )}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+// ==========================
 // Main Menu
 // ==========================
 const Menu = () => {
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [lightboxIndex, setLightboxIndex] = useState(null);
@@ -350,18 +452,10 @@ const Menu = () => {
         </div>
       </div>
 
-      {/* Banner (news) */}
+      {/* Banner Carousel */}
       {banners && banners.length > 0 && (
-        <div className="p-3">
-          <div className="w-full rounded-lg overflow-hidden shadow-sm">
-            <img src={banners[0].image_url} alt={banners[0].title} className="w-full h-40 object-cover" />
-            <div className="-mt-12 px-4 pb-3">
-              <div className="bg-white/90 dark:bg-gray-900/80 backdrop-blur rounded-lg p-3 max-w-3xl mx-auto -mt-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{banners[0].title}</h3>
-                {banners[0].subtitle && <p className="text-sm text-gray-600 dark:text-gray-400">{banners[0].subtitle}</p>}
-              </div>
-            </div>
-          </div>
+        <div className="px-3 pt-3">
+          <BannerCarousel banners={banners} />
         </div>
       )}
       {/* Top Sales Info Banner */}
