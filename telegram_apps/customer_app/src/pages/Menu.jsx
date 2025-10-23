@@ -165,7 +165,7 @@ const LightboxModal = ({ dishes, index, onClose, onAdd }) => {
 // ==========================
 // MenuItem
 // ==========================
-const MenuItem = ({ item, onAddToCart, onImageClick, showBestseller }) => {
+const MenuItem = ({ item, onAddToCart, onImageClick, topRank }) => {
   const [isAdding, setIsAdding] = useState(false);
 
   const handleAdd = () => {
@@ -177,16 +177,16 @@ const MenuItem = ({ item, onAddToCart, onImageClick, showBestseller }) => {
 
   return (
     <div className="relative bg-white/80 dark:bg-gray-900/70 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-md transition-all">
-      {showBestseller && (
-        <div className="absolute top-2 left-2 z-10 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg flex items-center gap-1">
-          <span>🔥</span>
-          <span>HOT</span>
+      {topRank && (
+        <div className="absolute top-2 left-2 z-10 bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-lg shadow-lg flex items-center gap-1 animate-topBadge">
+          <span className="text-sm">🔥</span>
+          <span>TOP {topRank}</span>
         </div>
       )}
       <img
         src={item.image_url}
         alt={item.name}
-        className="w-full h-32 object-cover cursor-pointer"
+        className="w-full h-48 object-cover cursor-pointer hover:scale-105 transition-transform duration-300"
         onClick={onImageClick}
       />
       <div className="p-3">
@@ -244,13 +244,16 @@ const Menu = () => {
     queryFn: async () => {
       const params = {};
       if (selectedCategory) params.category_id = selectedCategory;
-      return (await menuAPI.getAll(params)).data.data.menuItems;
+      const response = await menuAPI.getAll(params);
+      // Backend already sorts by sales_count DESC
+      return response.data.data.menuItems;
     },
   });
 
-  // Get featured items for Hot Sales section
-  const featuredItems = useMemo(() => {
-    return (menuItems || []).filter(item => item.is_featured);
+  // Get top 10 items based on sales_count
+  const top10Items = useMemo(() => {
+    if (!menuItems || menuItems.length === 0) return [];
+    return menuItems.slice(0, 10);
   }, [menuItems]);
 
   const processedItems = useMemo(() => {
@@ -263,6 +266,12 @@ const Menu = () => {
       );
     return items.slice(0, limit);
   }, [menuItems, searchQuery, limit]);
+
+  // Helper function to get top rank for an item
+  const getTopRank = (itemId) => {
+    const index = top10Items.findIndex(item => item.id === itemId);
+    return index >= 0 ? index + 1 : null;
+  };
 
   const handleAddToCart = (item) => {
     addItem(item, 1);
@@ -355,39 +364,24 @@ const Menu = () => {
           </div>
         </div>
       )}
-      {/* Section Header with Hot Sales indicator */}
-      {/* Hot Sales Section */}
-      {!searchQuery && !selectedCategory && featuredItems.length > 0 && (
-        <div className="px-3 pt-3">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <span className="text-2xl">🔥</span>
-              Hot Sales
-            </h2>
-          </div>
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            {featuredItems.slice(0, 4).map((item, i) => (
-              <div key={item.id} className="relative">
-                <MenuItem
-                  item={item}
-                  onAddToCart={handleAddToCart}
-                  onImageClick={() => setLightboxIndex(i)}
-                />
-                <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg animate-pulse">
-                  HOT
-                </div>
+      {/* Top Sales Info Banner */}
+      {!searchQuery && !selectedCategory && menuItems.length > 0 && (
+        <div className="px-3 pt-3 pb-2">
+          <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 dark:from-orange-500/20 dark:to-red-500/20 rounded-xl p-4 border border-orange-200 dark:border-orange-800">
+            <div className="flex items-center gap-3">
+              <div className="text-3xl">🔥</div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Top Sellers</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  All items sorted by popularity • Top 10 highlighted
+                </p>
               </div>
-            ))}
-          </div>
-          <div className="border-t border-gray-200 dark:border-gray-800 pt-3 mb-1">
-            <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300">
-              All Menu Items
-            </h2>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Dishes */}
+      {/* All Menu Items */}
       <div className="p-3">
         <div className="grid grid-cols-2 gap-3">
           {processedItems.map((item, i) => (
@@ -396,7 +390,7 @@ const Menu = () => {
               item={item}
               onAddToCart={handleAddToCart}
               onImageClick={() => setLightboxIndex(i)}
-              showBestseller={!searchQuery && i < 6 && (item.sales_count || 0) > 0}
+              topRank={!searchQuery ? getTopRank(item.id) : null}
             />
           ))}
         </div>
@@ -422,7 +416,24 @@ const style = document.createElement('style');
 style.innerHTML = `
 @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
 @keyframes scaleIn { from { transform: scale(0.95); opacity: 0 } to { transform: scale(1); opacity: 1 } }
+@keyframes topBadge { 
+  0% { 
+    opacity: 0; 
+    transform: scale(0.5) rotate(-15deg); 
+  }
+  50% {
+    transform: scale(1.1) rotate(5deg);
+  }
+  100% { 
+    opacity: 1; 
+    transform: scale(1) rotate(0deg); 
+  }
+}
 .animate-fadeIn { animation: fadeIn 0.25s ease-out; }
 .animate-scaleIn { animation: scaleIn 0.25s ease-out; }
+.animate-topBadge { 
+  animation: topBadge 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); 
+  box-shadow: 0 4px 12px rgba(251, 146, 60, 0.4);
+}
 `;
 document.head.appendChild(style);
