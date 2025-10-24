@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { categoriesAPI, menuAPI } from '@/services/api';
+import { categoriesAPI, menuAPI, bannersAPI } from '@/services/api';
 import {
   Plus, Search, X, Minus, ChevronLeft, ChevronRight, ZoomIn, ZoomOut
 } from 'lucide-react';
@@ -335,9 +335,8 @@ const Menu = () => {
   const { data: banners } = useQuery({
     queryKey: ['banners'],
     queryFn: async () => {
-      const res = await fetch('/api/banners');
-      const json = await res.json();
-      return json.data.banners || [];
+      const resp = await bannersAPI.getAll();
+      return (resp.data && resp.data.data && resp.data.data.banners) || [];
     }
   });
 

@@ -71,6 +71,15 @@ export const menuAPI = {
   getAll: (params) => api.get('/menu', { params: { ...params, available_only: true } })
 };
 
+export const bannersAPI = {
+  getAll: () => api.get('/banners')
+};
+
+export const newsAPI = {
+  getAll: () => api.get('/news'),
+  getOne: (id) => api.get(`/news/${id}`)
+};
+
 export const addressesAPI = {
   getAll: () => api.get('/addresses'),
   create: (data) => api.post('/addresses', data),
