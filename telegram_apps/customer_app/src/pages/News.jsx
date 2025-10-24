@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Newspaper, Calendar, ChevronRight } from 'lucide-react';
 import { formatDate } from '@/utils/formatters';
+import { newsAPI } from '@/services/api';
 
 const News = () => {
   const navigate = useNavigate();
@@ -10,9 +11,8 @@ const News = () => {
   const { data: newsData, isLoading } = useQuery({
     queryKey: ['news'],
     queryFn: async () => {
-      const res = await fetch('/api/news');
-      const json = await res.json();
-      return json.data.news || [];
+      const res = await newsAPI.getAll();
+      return (res.data && res.data.data && res.data.data.news) || [];
     }
   });
 

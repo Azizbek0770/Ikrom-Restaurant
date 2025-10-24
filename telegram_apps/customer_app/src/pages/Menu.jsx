@@ -244,9 +244,14 @@ const BannerCarousel = ({ banners }) => {
   };
 
   const handleBannerClick = (banner) => {
-    if (banner.banner_type === 'news_linked' && banner.news_id) {
-      navigate(`/news/${banner.news_id}`);
-    } else if (banner.link) {
+    if (banner.banner_type === 'news_linked') {
+      const targetId = banner.news_id || (banner.news && banner.news.id);
+      if (targetId) {
+        navigate(`/news/${targetId}`);
+        return;
+      }
+    }
+    if (banner.link) {
       window.open(banner.link, '_blank');
     }
   };
