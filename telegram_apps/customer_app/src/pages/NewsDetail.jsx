@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, User } from 'lucide-react';
 import { formatDate } from '@/utils/formatters';
+import { newsAPI } from '@/services/api';
 
 const NewsDetail = () => {
   const { id } = useParams();
@@ -11,10 +12,8 @@ const NewsDetail = () => {
   const { data: newsData, isLoading, error } = useQuery({
     queryKey: ['news', id],
     queryFn: async () => {
-      const res = await fetch(`/api/news/${id}`);
-      if (!res.ok) throw new Error('News not found');
-      const json = await res.json();
-      return json.data.news;
+      const res = await newsAPI.getOne(id);
+      return (res.data && res.data.data && res.data.data.news) || null;
     }
   });
 
