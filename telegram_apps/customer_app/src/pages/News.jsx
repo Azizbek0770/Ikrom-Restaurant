@@ -1,5 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { newsAPI } from '@/services/api';
 import { useNavigate } from 'react-router-dom';
 import { Newspaper, Calendar, ChevronRight } from 'lucide-react';
 import { formatDate } from '@/utils/formatters';
@@ -10,9 +11,8 @@ const News = () => {
   const { data: newsData, isLoading } = useQuery({
     queryKey: ['news'],
     queryFn: async () => {
-      const res = await fetch('/api/news');
-      const json = await res.json();
-      return json.data.news || [];
+      const resp = await newsAPI.getAll();
+      return (resp.data && resp.data.data && resp.data.data.news) || [];
     }
   });
 

@@ -14,7 +14,15 @@ const getActiveBanners = async (req, res, next) => {
       }]
     });
 
-    res.json({ success: true, data: { banners } });
+    // Normalize response to ensure frontend can open news detail from banner
+    const normalized = banners.map(b => {
+      const plain = b.toJSON ? b.toJSON() : b;
+      // attach news_id from included relation if missing
+      if (!plain.news_id && plain.news && plain.news.id) plain.news_id = plain.news.id;
+      return plain;
+    });
+
+    res.json({ success: true, data: { banners: normalized } });
   } catch (error) {
     next(error);
   }

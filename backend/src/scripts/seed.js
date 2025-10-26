@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const fs = require('fs').promises;
 const path = require('path');
-const { User, Category, MenuItem, sequelize } = require('../models');
+const { User, Category, MenuItem, News, Banner, sequelize } = require('../models');
 const { logger } = require('../config/database');
 require('dotenv').config();
 
@@ -202,6 +202,37 @@ const seed = async () => {
           });
         }
       }
+    }
+
+    // Create a sample news item + banner if none published exists
+    const publishedExists = await News.findOne({ where: { is_published: true }, transaction });
+    if (!publishedExists) {
+      const sampleNews = await News.create({
+        title: 'Welcome to Delicious Bites',
+        excerpt: 'Order your favorite meals now — special launch offers available!',
+        content: 'We are excited to launch our food delivery platform. Enjoy discounts and fast delivery.',
+        image_url: '/uploads/banners/welcome.png',
+        is_published: true,
+        author: 'System',
+        sort_order: 0,
+        published_at: new Date()
+      }, { transaction });
+
+      // Create linked banner
+      await Banner.findOrCreate({
+        where: { news_id: sampleNews.id, banner_type: 'news_linked' },
+        defaults: {
+          title: sampleNews.title,
+          subtitle: sampleNews.excerpt,
+          image_url: sampleNews.image_url,
+          banner_type: 'news_linked',
+          news_id: sampleNews.id,
+          is_active: true,
+          sort_order: 0
+        },
+        transaction
+      });
+      logger.info('✅ Sample news and banner created');
     }
 
     await transaction.commit();

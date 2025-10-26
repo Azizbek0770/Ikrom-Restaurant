@@ -244,8 +244,10 @@ const BannerCarousel = ({ banners }) => {
   };
 
   const handleBannerClick = (banner) => {
-    if (banner.banner_type === 'news_linked' && banner.news_id) {
-      navigate(`/news/${banner.news_id}`);
+    // Prefer explicit news_id, fall back to associated news object
+    const newsId = banner.news_id || (banner.news && banner.news.id);
+    if (banner.banner_type === 'news_linked' && newsId) {
+      navigate(`/news/${newsId}`);
     } else if (banner.link) {
       window.open(banner.link, '_blank');
     }
@@ -396,7 +398,7 @@ const Menu = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Search + Categories */}
-      <div className="sticky top-[55px] z-40 backdrop-blur-md bg-white/40 dark:bg-gray-900/40 border-b border-gray-200 dark:border-gray-800 pb-2">
+      <div className="sticky top-[50px] z-40 backdrop-blur-md bg-white/40 dark:bg-gray-900/40 border-b border-gray-200 dark:border-gray-800 pb-1	">
         <div className="px-4 pt-4">
           <div className="relative mb-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
