@@ -1,0 +1,113 @@
+/* =======================
+   Elegant Restaurant Loader
+   ======================= */
+
+   .loader-card {
+    font-family: 'Poppins', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.8s ease-out;
+    padding: 2.5rem 3rem;
+    border-radius: 1.5rem;
+    backdrop-filter: blur(14px);
+    background: linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.7),
+      rgba(255, 255, 255, 0.4)
+    );
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+  }
+  
+  .dark .loader-card {
+    background: linear-gradient(
+      145deg,
+      rgba(30, 30, 30, 0.8),
+      rgba(45, 45, 45, 0.6)
+    );
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  }
+  
+  .icon-wrapper {
+    position: relative;
+  }
+  
+  .loader-icon {
+    display: inline-block;
+    filter: drop-shadow(0 0 6px rgba(255, 175, 75, 0.5));
+  }
+  
+  @keyframes breath {
+    0%, 100% { transform: scale(1); opacity: 0.9; }
+    50% { transform: scale(1.08); opacity: 1; }
+  }
+  
+  .animate-breath {
+    animation: breath 2.4s ease-in-out infinite;
+  }
+  
+  /* Word carousel with soft gradient */
+  .word-carousel {
+    position: relative;
+    height: 2em;
+    width: 22ch;
+    overflow: hidden;
+    display: inline-block;
+    margin-top: 0.25rem;
+    margin-left: 0.5rem;
+  }
+  
+  .word {
+    position: absolute;
+    font-size: 1.2rem;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    transform: translateY(100%);
+    background: linear-gradient(90deg, #00597c, #510077, #008362, #528500, #1b004d);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    font-weight: 600;
+    text-transform: capitalize;
+    animation: wordCycle 6s infinite ease-in-out;
+  }
+  
+  .word:nth-child(1) { animation-delay: 0s; }
+  .word:nth-child(2) { animation-delay: 1.2s; }
+  .word:nth-child(3) { animation-delay: 2.4s; }
+  .word:nth-child(4) { animation-delay: 3.6s; }
+  .word:nth-child(5) { animation-delay: 4.8s; }
+  
+  @keyframes wordCycle {
+    0%, 5% {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    10%, 25% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    30%, 100% {
+      opacity: 0;
+      transform: translateY(-100%);
+    }
+  }
+  
+  /* FadeIn appearance */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  /* Subtle background pulse */
+  .min-h-screen {
+    animation: pulseBg 6s infinite alternate;
+  }
+  
+  @keyframes pulseBg {
+    from { background-position: 0% 50%; }
+    to { background-position: 100% 50%; }
+  }
+  

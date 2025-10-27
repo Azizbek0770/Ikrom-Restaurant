@@ -110,32 +110,32 @@ Update `backend/.env` and `telegram_apps/customer_app/.env` with your actual ngr
 **Or manually:**
 ```bash
 # Set customer bot webhook
-curl -X POST https://4f7ac415f262.ngrok-free.app/api/webhooks/set/customer \
+curl -X POST https://89ad3978a3f7.ngrok-free.app/api/webhooks/set/customer \
   -H "Content-Type: application/json" \
-  -d '{"url": "https://4f7ac415f262.ngrok-free.app/api/webhooks/telegram/customer"}'
+  -d '{"url": "https://89ad3978a3f7.ngrok-free.app/api/webhooks/telegram/customer"}'
 
 # Set delivery bot webhook
-curl -X POST https://4f7ac415f262.ngrok-free.app/api/webhooks/set/delivery \
+curl -X POST https://89ad3978a3f7.ngrok-free.app/api/webhooks/set/delivery \
   -H "Content-Type: application/json" \
-  -d '{"url": "https://4f7ac415f262.ngrok-free.app/api/webhooks/telegram/delivery"}'
+  -d '{"url": "https://89ad3978a3f7.ngrok-free.app/api/webhooks/telegram/delivery"}'
 ```
 
 ### Step 5: Verify Webhooks
 
 ```bash
 # Check customer bot webhook
-curl https://4f7ac415f262.ngrok-free.app/api/webhooks/info/customer
+curl https://89ad3978a3f7.ngrok-free.app/api/webhooks/info/customer
 
 # Check delivery bot webhook
-curl https://4f7ac415f262.ngrok-free.app/api/webhooks/info/delivery
+curl https://89ad3978a3f7.ngrok-free.app/api/webhooks/info/delivery
 ```
 
 ## Runtime Tests
 
 ### Test 1: CORS Preflight
 ```bash
-curl -X OPTIONS https://4f7ac415f262.ngrok-free.app/api/auth/telegram \
-  -H "Origin: https://5stqritz6i.eu.loclx.io" \
+curl -X OPTIONS https://89ad3978a3f7.ngrok-free.app/api/auth/telegram \
+  -H "Origin: https://b5ipdakrhm.eu.loclx.io" \
   -H "Access-Control-Request-Method: POST" \
   -i
 ```
@@ -148,8 +148,8 @@ Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
 
 ### Test 2: Auth Endpoint
 ```bash
-curl -X POST https://4f7ac415f262.ngrok-free.app/api/auth/telegram \
-  -H "Origin: https://5stqritz6i.eu.loclx.io" \
+curl -X POST https://89ad3978a3f7.ngrok-free.app/api/auth/telegram \
+  -H "Origin: https://b5ipdakrhm.eu.loclx.io" \
   -H "Content-Type: application/json" \
   -d '{
     "telegram_id": "123456789",

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import useSearchStore from '@/store/searchStore';
 import { categoriesAPI, menuAPI, bannersAPI } from '@/services/api';
 import {
   Plus, Search, X, Minus, ChevronLeft, ChevronRight, ZoomIn, ZoomOut
@@ -195,7 +196,7 @@ const MenuItem = ({ item, onAddToCart, onImageClick, topRank }) => {
         {item.description && (
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{item.description}</p>
         )}
-        <div className="flex items-center justify-between mt-3">
+        <div className="flex items-center justify-between mt-1">
           <p className="text-lg font-bold text-primary-600 dark:text-primary-400">
             {formatCurrency(item.price)}
           </p>
@@ -324,7 +325,7 @@ const BannerCarousel = ({ banners }) => {
 const Menu = () => {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const { searchQuery } = useSearchStore();
   const [lightboxIndex, setLightboxIndex] = useState(null);
   const [limit, setLimit] = useState(25);
   const { addItem } = useCartStore();
@@ -399,8 +400,8 @@ const Menu = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Search + Categories */}
       <div className="sticky top-[50px] z-40 backdrop-blur-md bg-white/40 dark:bg-gray-900/40 border-b border-gray-200 dark:border-gray-800 pb-1	">
-        <div className="px-4 pt-4">
-          <div className="relative mb-1">
+        <div className="px-2 pt-3">
+          {/* <div className="relative mb-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
@@ -417,9 +418,9 @@ const Menu = () => {
                 <X className="w-5 h-5" />
               </button>
             )}
-          </div>
+          </div> */}
 
-          <div className="flex space-x-2 overflow-x-auto scrollbar-hide py-2">
+          <div className="flex space-x-2 overflow-x-auto scrollbar-hide py-2 pl-2">
             <button
               onClick={() => setSelectedCategory('')}
               className={cn(
@@ -454,11 +455,11 @@ const Menu = () => {
       </div>
 
       {/* Banner Carousel */}
-      {banners && banners.length > 0 && (
-        <div className="px-3 pt-3">
-          <BannerCarousel banners={banners} />
-        </div>
-      )}
+        {banners && banners.length > 0 && !selectedCategory && (
+         <div className="px-3 pt-3">
+           <BannerCarousel banners={banners} />
+          </div>
+        )}
       {/* Top Sales Info Banner */}
       {!searchQuery && !selectedCategory && menuItems.length > 0 && (
         <div className="px-3 pt-3 pb-2">

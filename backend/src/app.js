@@ -28,6 +28,14 @@ const indexRoutes = require('./routes/index');
 const app = express();
 const server = http.createServer(app);
 
+// Respect proxy headers (ngrok, load balancers) when configured
+if (process.env.TRUST_PROXY) {
+  // Accept values like '1', 'true', or specific proxy values
+  const tp = process.env.TRUST_PROXY === 'true' || process.env.TRUST_PROXY === '1' ? 1 : process.env.TRUST_PROXY;
+  app.set('trust proxy', tp);
+  logger.info(`Express trust proxy set to: ${tp}`);
+}
+
 // --- Allowed Origins ---
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
@@ -69,6 +77,18 @@ io.on('connection', (socket) => {
 // --- Middleware ---
 app.use(helmet());
 
+// Fast-path: respond to API preflight OPTIONS immediately to avoid proxy 502s
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS' && req.path && req.path.startsWith('/api/')) {
+    res.set('Access-Control-Allow-Origin', req.get('origin') || '*');
+    res.set('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, ngrok-skip-browser-warning');
+    res.set('Access-Control-Allow-Credentials', 'true');
+    return res.sendStatus(204);
+  }
+  return next();
+});
+
 // --- CORS Setup with Auto Debugging ---
 app.use(
   cors({
@@ -82,13 +102,9 @@ app.use(
         console.log('✅ Origin allowed:', origin);
         return callback(null, true);
       } else {
+        // Log blocked origin and return falsy result rather than throwing an error
         console.log('❌ Origin blocked by CORS:', origin);
-        return callback(
-          new Error(
-            'CORS policy does not allow access from this origin: ' + origin
-          ),
-          false
-        );
+        return callback(null, false);
       }
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -96,6 +112,15 @@ app.use(
     credentials: true,
   })
 );
+
+// Handle preflight explicitly to avoid 502s from proxies rejecting OPTIONS
+app.options('/api/*', (req, res) => {
+  res.set('Access-Control-Allow-Origin', req.get('origin') || '*');
+  res.set('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, ngrok-skip-browser-warning');
+  res.set('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(204);
+});
 
 // --- Debug Endpoint ---
 app.get('/api/debug', (req, res) => {

@@ -5,15 +5,16 @@ import router from './router';
 import useAuthStore from './store/authStore';
 import useThemeStore from './store/themeStore';
 import telegramService from './services/telegram';
+import './loader.css'; // 👈 import the CSS file below
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
       retry: 1,
-      staleTime: 5 * 60 * 1000
-    }
-  }
+      staleTime: 5 * 60 * 1000,
+    },
+  },
 });
 
 function App() {
@@ -21,37 +22,31 @@ function App() {
   const { initTheme } = useThemeStore();
 
   useEffect(() => {
-    // Initialize theme
     initTheme();
-
-    // Initialize Telegram SDK
     telegramService.init();
-
-    // Authenticate user
     authenticate();
   }, [authenticate, initTheme]);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <span className="text-2xl">🍽️</span>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950">
+          <div className="icon-wrapper mb-4">
+            {/* <span className="loader-icon text-5xl animate-breath">🍽️</span> */}
           </div>
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 dark:border-primary-400 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400 font-medium">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
+          <h1 className="loader-title text-[1.5rem] text-gray-700 font-semibold dark:text-gray-100 tracking-wide mb-1">
+            Ikrom Shashlikda
+          </h1>
   
-
-  return (
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  );
+          <div className="word-carousel">
+            <span className="word"> Mazzali taomlar 🥘</span>
+            <span className="word"> Sara ichimliklar 🍹</span>
+            <span className="word"> To‘yimli shashliklar 🍖</span>
+            <span className="word"> Muomilali ishchilar 👨‍🍳🤵</span>
+            <span className="word"> Yetkazib berish 🚗</span>
+          </div>
+        </div>
+    );
+  }  
+  return <QueryClientProvider client={queryClient}><RouterProvider router={router} /></QueryClientProvider>;
 }
-
 export default App;
