@@ -19,6 +19,11 @@ const News = sequelize.define('News', {
     type: DataTypes.TEXT,
     allowNull: true
   },
+  // Array of { text, url } entries appended to the news content (optional)
+  sublinks: {
+    type: DataTypes.JSONB,
+    allowNull: true
+  },
   image_url: {
     type: DataTypes.STRING,
     allowNull: true

@@ -92,6 +92,36 @@ exports.uploadImage = async (req, res) => {
             await user.update({ avatar_url: imageUrl });
             return res.status(200).json({ success: true, data: { url: imageUrl, resource: user } });
           }
+          // App logo upload shortcut: support settings_logo, settings_logo_light, settings_logo_dark
+          if (type === 'settings_logo' || type === 'settings_logo_light' || type === 'settings_logo_dark') {
+            try {
+              const Settings = require('../models/Settings');
+              if (Settings) {
+                // Upsert a single-row settings record
+                let settings = await Settings.findOne({ where: { key: 'site' } });
+                const prev = settings?.value || {};
+                const value = { ...prev };
+                if (type === 'settings_logo') {
+                  // generic fallback
+                  value.logo_url = imageUrl;
+                } else if (type === 'settings_logo_light') {
+                  value.logo_light = imageUrl;
+                } else if (type === 'settings_logo_dark') {
+                  value.logo_dark = imageUrl;
+                }
+
+                if (settings) {
+                  await settings.update({ value });
+                } else {
+                  settings = await Settings.create({ key: 'site', value });
+                }
+
+                return res.status(200).json({ success: true, data: { url: imageUrl, resource: settings } });
+              }
+            } catch (errSettings) {
+              // ignore, fallthrough to returning upload info
+            }
+          }
         } catch (errAttach) {
           logger.error('Failed to attach image to resource:', errAttach);
           // fallthrough to returning upload info

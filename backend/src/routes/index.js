@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bannerController = require('../controllers/bannerController');
 const newsRoutes = require('./newsRoutes');
+const settingsRoutes = require('./settingsRoutes');
 const { authenticate, authorize } = require('../middleware/auth');
 const debugRoutes = require('./debugRoutes');
 
@@ -13,6 +14,8 @@ router.use('/news', newsRoutes);
 
 // Debug routes (non-destructive)
 router.use('/debug', debugRoutes);
+// Settings
+router.use('/settings', settingsRoutes);
 
 // Admin CRUD for banners
 router.get('/admin/banners', authenticate, authorize('admin'), bannerController.listBanners);

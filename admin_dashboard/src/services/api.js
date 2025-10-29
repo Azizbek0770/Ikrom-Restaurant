@@ -84,6 +84,9 @@ export const usersAPI = {
   create: (data) => api.post('/users', data),
   update: (id, data) => api.put(`/users/${id}`, data),
   uploadAvatar: (id, formData) => api.post(`/upload/avatars/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  uploadLogo: (formData) => api.post('/upload/settings_logo', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  uploadLogoLight: (formData) => api.post('/upload/settings_logo_light', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  uploadLogoDark: (formData) => api.post('/upload/settings_logo_dark', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   delete: (id) => api.delete(`/users/${id}`)
 };
 

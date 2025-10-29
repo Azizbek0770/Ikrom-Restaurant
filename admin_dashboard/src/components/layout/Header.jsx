@@ -1,14 +1,44 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Bell, User } from 'lucide-react';
 import useAuthStore from '@/store/authStore';
+import axios from 'axios';
 
 const Header = () => {
   const user = useAuthStore((state) => state.user);
+  const [logoUrl, setLogoUrl] = useState('');
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const resp = await axios.get((import.meta.env.VITE_API_BASE_URL || '') + '/settings/site');
+        const site = resp?.data?.data?.settings || {};
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const chosen = (prefersDark && site.logo_dark) || (!prefersDark && site.logo_light) || site.logo_url || import.meta.env.VITE_APP_LOGO || '';
+        if (mounted) setLogoUrl(chosen);
+      } catch (err) { }
+    };
+    load();
+    return () => { mounted = false; };
+  }, []);
 
   return (
     <header className="bg-white border-b border-gray-200 h-16 fixed top-0 right-0 left-64 z-10">
       <div className="flex items-center justify-between h-full px-6">
-        <div className="flex-1">
+        <div className="flex-1 flex items-center gap-4">
+          {logoUrl ? (
+            <img
+              id="admin-logo-img"
+              src={logoUrl}
+              alt="logo"
+              className="w-8 h-8 rounded"
+              onError={() => {
+                console.warn('Admin logo failed to load:', logoUrl);
+              }}
+            />
+          ) : (
+            <div className="w-8 h-8 rounded bg-gray-100" />
+          )}
           {/* Search or breadcrumbs can go here */}
         </div>
 

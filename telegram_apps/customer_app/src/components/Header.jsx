@@ -3,51 +3,92 @@ import { Moon, Sun, Search, X } from 'lucide-react';
 import useThemeStore from '@/store/themeStore';
 import telegramService from '@/services/telegram';
 import useSearchStore from '@/store/searchStore';
+import axios from 'axios';
 
 const Header = () => {
   const { theme, toggleTheme } = useThemeStore();
   const { searchQuery, setSearchQuery } = useSearchStore();
   const [localValue, setLocalValue] = useState(searchQuery || '');
   const [expanded, setExpanded] = useState(false);
+  const [visible, setVisible] = useState(false);
   const inputRef = useRef(null);
   const containerRef = useRef(null);
   const logoRef = useRef(null);
   const controlsRef = useRef(null);
-  const [overlayStyle, setOverlayStyle] = useState(null);
+  const [inputWidth, setInputWidth] = useState(0);
 
+  // Compute available width for expanding input
   useEffect(() => {
     if (expanded) {
+      setVisible(true);
       if (inputRef.current) inputRef.current.focus();
-      // compute overlay bounds inside header container so it overlays without shifting
       try {
-        const cont = containerRef.current.getBoundingClientRect();
         const logo = logoRef.current.getBoundingClientRect();
         const controls = controlsRef.current.getBoundingClientRect();
-        const left = Math.max(8, logo.right - cont.left + 8);
-        const right = Math.max(8, cont.right - controls.left + 8);
-        setOverlayStyle({ left: `${left}px`, right: `${right}px`, top: '50%', transform: 'translateY(-50%)' });
-      } catch (err) {
-        setOverlayStyle(null);
+        const width = controls.left - logo.right - 24; // space between logo and controls
+        setInputWidth(width > 100 ? width : 0);
+      } catch {
+        setInputWidth(0);
       }
-      document.body.style.overflow = 'hidden';
     } else {
-      setOverlayStyle(null);
-      document.body.style.overflow = 'auto';
+      const timeout = setTimeout(() => setVisible(false), 300);
+      setInputWidth(0);
+      return () => clearTimeout(timeout);
     }
-    return () => { document.body.style.overflow = 'auto'; };
   }, [expanded]);
 
-  // Debounce updating global search store
+  const [logoUrl, setLogoUrl] = useState('');
+  const [logoRetry, setLogoRetry] = useState(0);
+
+  // Load theme-specific logo from server settings and update when theme changes
   useEffect(() => {
-    const t = setTimeout(() => {
-      setSearchQuery(localValue);
-    }, 400);
+    let mounted = true;
+    const load = async () => {
+      try {
+        const base = import.meta.env.VITE_API_BASE_URL || '';
+        const resp = await axios.get(base ? `${base}/settings/site` : `/settings/site`);
+        const site = resp?.data?.data?.settings || {};
+
+        // Choose logo based on current theme (store-driven)
+        const chosen = theme === 'dark'
+          ? (site.logo_dark || site.logo_url || import.meta.env.VITE_APP_LOGO || '')
+          : (site.logo_light || site.logo_url || import.meta.env.VITE_APP_LOGO || '');
+
+        if (mounted) setLogoUrl(chosen);
+      } catch (err) {
+        // ignore fetch errors
+      }
+    };
+
+    load();
+    return () => { mounted = false; };
+  }, [theme]);
+
+  // Debounce search sync
+  useEffect(() => {
+    const t = setTimeout(() => setSearchQuery(localValue), 400);
     return () => clearTimeout(t);
   }, [localValue, setSearchQuery]);
 
   const handleThemeToggle = () => {
     telegramService.hapticImpact('light');
     toggleTheme();
+  };
+
+  const handleSearchClick = () => {
+    if (!expanded) setExpanded(true);
+    else {
+      setSearchQuery(localValue);
+      setExpanded(false);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') setExpanded(false);
+    if (e.key === 'Enter') {
+      setSearchQuery(localValue);
+      setExpanded(false);
+    }
   };
 
   return (
@@ -57,90 +98,89 @@ const Header = () => {
         backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 
         border-b border-gray-200/70 dark:border-gray-800/70 
         shadow-sm transition-all duration-300
-        supports-[backdrop-filter]:backdrop-blur-md
       "
     >
-        <div ref={containerRef} className="relative flex items-center justify-between px-3 py-2 sm:px-4">
-          {expanded && (
-            <div
-              className="absolute inset-x-0 z-40 flex items-center"
-              style={{
-                left: overlayStyle?.left || '72px',
-                right: overlayStyle?.right || '88px',
-                top: overlayStyle?.top || '50%',
-                transform: overlayStyle?.transform || 'translateY(-50%)',
-                transition: 'left 220ms ease, right 220ms ease, opacity 200ms ease',
-                opacity: expanded ? 1 : 0
-              }}
-            >
-              <div className="w-full">
-                <div className="flex items-center bg-white dark:bg-gray-900 rounded-xl shadow-sm px-3 py-1 transition">
-                  <input
-                    ref={inputRef}
-                    value={localValue}
-                    onChange={(e) => setLocalValue(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Escape') {
-                        setExpanded(false);
-                      }
-                      if (e.key === 'Enter') {
-                        setSearchQuery(localValue);
-                        setExpanded(false);
-                      }
-                    }}
-                    placeholder="Search menu..."
-                    className="bg-transparent outline-none w-full text-sm text-gray-900 dark:text-white placeholder-gray-500"
-                  />
-                  <button onClick={() => { setExpanded(false); setSearchQuery(''); }} className="p-1 ml-2">
-                    <X className="w-4 h-4 text-gray-500" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        {/* Logo & Title */}
+      <div ref={containerRef} className="relative flex items-center justify-between px-3 py-2 sm:px-4">
+        {/* Logo (server-controlled) */}
         <div ref={logoRef} className="flex items-center space-x-3">
-          <div
-            className="
-              w-10 h-10 rounded-xl flex items-center justify-center 
-              bg-gradient-to-br from-indigo-500 to-indigo-600 
-              dark:from-indigo-600 dark:to-indigo-700 
-              shadow-md shadow-indigo-500/20 dark:shadow-indigo-900/30 
-              transition-transform duration-300 hover:scale-105
-            "
-          >
-            <span className="text-white text-xl font-bold select-none">🍽️</span>
-          </div>
-
-          <div className="leading-tight select-none">
-            <h1
-              className="
-                text-base sm:text-lg font-semibold 
-                text-gray-900 dark:text-gray-100 tracking-tight
-              "
-            >
-              {import.meta.env.VITE_APP_NAME || 'Food Delivery'}
-            </h1>
-            <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
-              Order delicious food easily 🍱
-            </p>
+          <div className="w-30vw h-full rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800">
+            {logoUrl ? (
+              <img
+                id="app-logo-img"
+                src={logoUrl}
+                alt="logo"
+                className="w-full h-full object-cover"
+                onError={() => {
+                  // retry once with cache-buster to avoid stale CDN cache or transient failures
+                  if (logoRetry < 2) {
+                    setLogoRetry((r) => r + 1);
+                    setLogoUrl((s) => (s ? `${s}${s.includes('?') ? '&' : '?'}cb=${Date.now()}` : s));
+                  } else {
+                    console.warn('Failed to load logo after retries:', logoUrl);
+                  }
+                }}
+              />
+            ) : (
+              <div className="w-full h-full" />
+            )}
           </div>
         </div>
 
-        {/* Search + Theme */}
-        <div ref={controlsRef} className="flex items-center gap-2">
-          <div className="relative">
-            {!expanded && (
-              <button
-                onClick={() => setExpanded(true)}
-                className="p-2.5 rounded-xl bg-gray-100/80 dark:bg-gray-800/70 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-                aria-label="Open search"
-              >
-                <Search className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-              </button>
-            )}
-          </div>
+        {/* Controls */}
+        <div ref={controlsRef} className="flex items-center gap-2 relative">
+          {/* Animated Search Input */}
+          {visible && (
+            <div
+              className="absolute flex items-center"
+              style={{
+                right: '90px', // ✅ moved slightly more left (was 68px)
+                // width: expanded ? `${inputWidth}px` : '0px',
+                width: expanded ? `35vw` : '0px',
+                height: '90vh',
+                opacity: expanded ? 1 : 0,
+                overflow: 'hidden',
+                transition: expanded
+                  ? 'width 0.45s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease-out'
+                  : 'width 0.45s cubic-bezier(0.55, 0, 0.1, 1), opacity 0.35s ease-out',
+              }}
+            >
+              <div className="flex items-center bg-white dark:bg-gray-900 rounded-xl shadow-sm px-3 py-1 ml-2 w-full">
+                <input
+                  ref={inputRef}
+                  value={localValue}
+                  onChange={(e) => setLocalValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Search menu..."
+                  className="bg-transparent outline-none w-full text-sm text-gray-900 dark:text-white placeholder-gray-500"
+                />
+                <button
+                  onClick={() => {
+                    setExpanded(false);
+                    setLocalValue('');
+                  }}
+                  className="p-1 ml-2 hover:opacity-80 transition"
+                >
+                  <X className="w-4 h-4 text-gray-500" />
+                </button>
+              </div>
+            </div>
+          )}
 
+          {/* Search Button */}
+          <button
+            onClick={handleSearchClick}
+            className={`p-2.5 rounded-xl transition-all duration-300 
+              ${
+                expanded
+                  ? 'bg-indigo-500 hover:bg-indigo-600 text-white shadow-md'
+                  : 'bg-gray-100/80 dark:bg-gray-800/70 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+              }`}
+            aria-label="Search"
+          >
+            <Search className="w-5 h-5" />
+          </button>
+
+          {/* Theme Toggle */}
           <button
             onClick={handleThemeToggle}
             aria-label="Toggle theme"

@@ -126,6 +126,15 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
+-- Settings table for site-wide key/value storage (logos, etc.)
+CREATE TABLE IF NOT EXISTS settings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  key VARCHAR NOT NULL UNIQUE,
+  value JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
 -- Clean up duplicate telegram_id values before applying unique constraint
 -- This keeps the oldest record and nullifies telegram_id for duplicates
 DO $$
@@ -547,15 +556,15 @@ BEGIN
     -- Ensure enum type exists
     BEGIN
       PERFORM 1 FROM pg_type WHERE typname = 'enum_users_role';
-    EXCEPTION WHEN OTHERS THEN NULL; END;
+  EXCEPTION WHEN OTHERS THEN NULL; END;
 
     -- Now alter the column type safely and then set default and not null
-    BEGIN
+  BEGIN
       -- Create enum type if missing (idempotent)
       DO $$ BEGIN CREATE TYPE IF NOT EXISTS enum_users_role AS ENUM ('customer','delivery','admin'); EXCEPTION WHEN duplicate_object THEN NULL; END$$;
-      ALTER TABLE users ALTER COLUMN role TYPE enum_users_role USING (role::text::enum_users_role);
-      ALTER TABLE users ALTER COLUMN role SET DEFAULT 'customer'::enum_users_role;
-      ALTER TABLE users ALTER COLUMN role SET NOT NULL;
+    ALTER TABLE users ALTER COLUMN role TYPE enum_users_role USING (role::text::enum_users_role);
+    ALTER TABLE users ALTER COLUMN role SET DEFAULT 'customer'::enum_users_role;
+    ALTER TABLE users ALTER COLUMN role SET NOT NULL;
     EXCEPTION WHEN OTHERS THEN NULL; END;
   EXCEPTION WHEN OTHERS THEN NULL; END;
 

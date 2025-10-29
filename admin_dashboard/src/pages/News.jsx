@@ -24,9 +24,9 @@ const News = () => {
   const handleSave = async (news) => {
     try {
       if (news.id) {
-        await newsAPI.update(news.id, news);
+        await newsAPI.update(news.id, { ...news, sublinks: news.sublinks });
       } else {
-        await newsAPI.create(news);
+        await newsAPI.create({ ...news, sublinks: news.sublinks });
       }
       toast.success('Saved');
       setEditing(null);
@@ -123,6 +123,27 @@ const News = () => {
             onChange={(e) => setEditing({ ...editing, author: e.target.value })} 
             placeholder="Author name (optional)"
           />
+
+          {/* Sublinks section: array of {text, url} */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Sublinks (optional)</label>
+            {(editing.sublinks || []).map((sl, idx) => (
+              <div key={idx} className="flex items-center space-x-2 mb-2">
+                <Input value={sl.text} placeholder="Text" onChange={(e) => {
+                  const arr = [...(editing.sublinks || [])]; arr[idx] = { ...arr[idx], text: e.target.value }; setEditing({ ...editing, sublinks: arr });
+                }} />
+                <Input value={sl.url} placeholder="https://..." onChange={(e) => {
+                  const arr = [...(editing.sublinks || [])]; arr[idx] = { ...arr[idx], url: e.target.value }; setEditing({ ...editing, sublinks: arr });
+                }} />
+                <button className="px-2 py-1 bg-red-500 text-white rounded" onClick={() => {
+                  const arr = [...(editing.sublinks || [])]; arr.splice(idx,1); setEditing({ ...editing, sublinks: arr });
+                }}>Remove</button>
+              </div>
+            ))}
+            <div>
+              <button className="px-3 py-2 bg-primary-600 text-white rounded" onClick={() => setEditing({ ...editing, sublinks: [ ...(editing.sublinks||[]), { text: '', url: '' } ] })}>Add Sublink</button>
+            </div>
+          </div>
 
           <div className="flex items-center space-x-2">
             <input

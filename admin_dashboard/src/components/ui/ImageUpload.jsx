@@ -38,7 +38,9 @@ const ImageUpload = ({
 
       // If this upload is tied to a resource (category/menu/user), prefer uploading with ID when available.
       // The parent component should pass a pre-configured upload URL via `props.uploadUrl` if needed.
-      const uploadUrl = props.uploadUrl || `/api/upload/${type}`;
+      // allow special 'logo' alias for site logo
+      const uploadType = type === 'logo' ? 'settings_logo' : type;
+      const uploadUrl = props.uploadUrl || `/api/upload/${uploadType}`;
       const response = await fetch(uploadUrl, {
         method: 'POST',
         headers: {

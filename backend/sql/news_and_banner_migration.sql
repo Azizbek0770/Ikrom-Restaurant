@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS news (
   content TEXT NOT NULL,
   excerpt TEXT,
   image_url VARCHAR,
+  sublinks JSONB,
   is_published BOOLEAN DEFAULT false,
   published_at TIMESTAMP WITH TIME ZONE,
   author VARCHAR,

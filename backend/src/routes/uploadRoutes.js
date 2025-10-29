@@ -24,7 +24,8 @@ router.post(
   (req, res, next) => {
     const { type } = req.params;
     let muxType = 'general';
-    if (type === 'categories' || type === 'menu' || type === 'banners') muxType = 'image';
+    // treat any settings_logo* variant as image
+    if (type === 'categories' || type === 'menu' || type === 'banners' || type === 'news' || type === 'settings_logo' || (typeof type === 'string' && type.startsWith('settings_logo'))) muxType = 'image';
     if (type === 'avatars') muxType = 'avatar';
 
     return uploadHandler({ type: muxType, field: 'image' })(req, res, next);

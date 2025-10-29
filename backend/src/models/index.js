@@ -9,6 +9,7 @@ const Delivery = require('./Delivery');
 const Notification = require('./Notification');
 const Banner = require('./Banner');
 const News = require('./News');
+const Settings = require('./Settings');
 
 // Define associations
 User.hasMany(Address, { foreignKey: 'user_id', as: 'addresses' });
@@ -58,6 +59,7 @@ const models = {
   Notification,
   Banner,
   News,
+  Settings,
   sequelize
 };
 

@@ -13,10 +13,10 @@ export default defineConfig({
     port: 3001,
     host: true,
     allowedHosts: [
-      'https://b5ipdakrhm.eu.loclx.io',
-      'b5ipdakrhm.eu.loclx.io',
-      'https://89ad3978a3f7.ngrok-free.app',
-      '89ad3978a3f7.ngrok-free.app',
+      'https://ah0wv4ibjh.eu.loclx.io',
+      'ah0wv4ibjh.eu.loclx.io',
+      'https://e8fe924f5faa.ngrok-free.app',
+      'e8fe924f5faa.ngrok-free.app',
       'localhost', // Allow localhost
     ]
   },

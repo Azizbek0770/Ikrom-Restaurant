@@ -51,7 +51,7 @@ const listNews = async (req, res, next) => {
 // Admin: create news
 const createNews = async (req, res, next) => {
   try {
-    const { title, content, excerpt, image_url, is_published, author, sort_order, add_to_banner } = req.body;
+    const { title, content, excerpt, image_url, is_published, author, sort_order, add_to_banner, sublinks } = req.body;
     
     // Create news item
     const news = await News.create({ 
@@ -62,6 +62,7 @@ const createNews = async (req, res, next) => {
       is_published, 
       author, 
       sort_order,
+      sublinks: Array.isArray(sublinks) ? sublinks : undefined,
       published_at: is_published ? new Date() : null
     });
 
@@ -91,6 +92,10 @@ const updateNews = async (req, res, next) => {
     const updates = req.body;
     const { add_to_banner } = updates;
     delete updates.add_to_banner;
+    // ensure sublinks is properly typed
+    if (updates.sublinks && !Array.isArray(updates.sublinks)) {
+      try { updates.sublinks = JSON.parse(updates.sublinks); } catch { updates.sublinks = undefined; }
+    }
 
     const news = await News.findByPk(id);
     if (!news) {

@@ -53,10 +53,10 @@ const News = () => {
         {/* Page Title */}
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            News & Updates
+            Yangiliklar
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
-            Stay updated with our latest offers and announcements
+            Yangiliklardan xabardor bo'ling
           </p>
         </div>
 

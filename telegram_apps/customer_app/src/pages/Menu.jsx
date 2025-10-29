@@ -458,8 +458,8 @@ const Menu = () => {
         {banners && banners.length > 0 && !selectedCategory && (
          <div className="px-3 pt-3">
            <BannerCarousel banners={banners} />
-          </div>
-        )}
+        </div>
+      )}
       {/* Top Sales Info Banner */}
       {!searchQuery && !selectedCategory && menuItems.length > 0 && (
         <div className="px-3 pt-3 pb-2">
@@ -471,8 +471,8 @@ const Menu = () => {
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   All items sorted by popularity • Top 10 highlighted
                 </p>
+                </div>
               </div>
-            </div>
           </div> */}
         </div>
       )}
