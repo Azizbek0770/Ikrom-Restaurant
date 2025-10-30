@@ -17,16 +17,24 @@ const Header = () => {
   const controlsRef = useRef(null);
   const [inputWidth, setInputWidth] = useState(0);
 
+  // Logo state management
+  const [logoUrl, setLogoUrl] = useState('');
+  const [logoError, setLogoError] = useState(false);
+  const [settingsData, setSettingsData] = useState(null);
+  const [isLoadingLogo, setIsLoadingLogo] = useState(true);
+
   // Compute available width for expanding input
   useEffect(() => {
     if (expanded) {
       setVisible(true);
       if (inputRef.current) inputRef.current.focus();
       try {
-        const logo = logoRef.current.getBoundingClientRect();
-        const controls = controlsRef.current.getBoundingClientRect();
-        const width = controls.left - logo.right - 24; // space between logo and controls
-        setInputWidth(width > 100 ? width : 0);
+        const logo = logoRef.current?.getBoundingClientRect();
+        const controls = controlsRef.current?.getBoundingClientRect();
+        if (logo && controls) {
+          const width = controls.left - logo.right - 24;
+          setInputWidth(width > 100 ? width : 0);
+        }
       } catch {
         setInputWidth(0);
       }
@@ -37,34 +45,105 @@ const Header = () => {
     }
   }, [expanded]);
 
-  const [logoUrl, setLogoUrl] = useState('');
-  const [logoRetry, setLogoRetry] = useState(0);
-  const [settingsObj, setSettingsObj] = useState(null);
-
-  // Load theme-specific logo from server settings and update when theme changes
+  // Load and update logo based on theme
   useEffect(() => {
     let mounted = true;
-    const load = async () => {
+    let retryTimeout = null;
+
+    const loadSettings = async (retryCount = 0) => {
+      if (!mounted) return;
+
       try {
-        const base = import.meta.env.VITE_API_BASE_URL || '';
-        const resp = await axios.get(base ? `${base}/settings/site` : `/settings/site`);
-        const site = resp?.data?.data?.settings || {};
+        setIsLoadingLogo(true);
+        setLogoError(false);
 
-        // Choose logo based on current theme (store-driven)
-        const chosen = theme === 'dark'
-          ? (site.logo_dark || site.logo_url || import.meta.env.VITE_APP_LOGO || '')
-          : (site.logo_light || site.logo_url || import.meta.env.VITE_APP_LOGO || '');
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+        const endpoint = baseUrl ? `${baseUrl}/settings/site` : '/settings/site';
+        
+        console.log('[Header] Fetching settings from:', endpoint);
+        
+        const response = await axios.get(endpoint, {
+          timeout: 10000,
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
 
-        if (mounted) setLogoUrl(chosen);
-        if (mounted) setSettingsObj(site);
-      } catch (err) {
-        // ignore fetch errors
+        if (!mounted) return;
+
+        const settings = response?.data?.data?.settings || response?.data?.settings || response?.data || {};
+        
+        console.log('[Header] Settings received:', settings);
+        setSettingsData(settings);
+
+        // Determine which logo to use based on theme
+        let selectedLogo = '';
+        
+        if (theme === 'dark') {
+          selectedLogo = settings.logo_dark || settings.logoDark || '';
+        } else {
+          selectedLogo = settings.logo_light || settings.logoLight || '';
+        }
+
+        // Fallback to default logo if theme-specific not available
+        if (!selectedLogo) {
+          selectedLogo = settings.logo_url || settings.logoUrl || settings.logo || '';
+        }
+
+        // Final fallback to env variable
+        if (!selectedLogo) {
+          selectedLogo = import.meta.env.VITE_APP_LOGO || '';
+        }
+
+        console.log(`[Header] Selected logo for ${theme} theme:`, selectedLogo);
+
+        if (selectedLogo && mounted) {
+          // Add timestamp to prevent caching issues
+          const logoWithTimestamp = selectedLogo.includes('?') 
+            ? `${selectedLogo}&t=${Date.now()}`
+            : `${selectedLogo}?t=${Date.now()}`;
+          
+          setLogoUrl(logoWithTimestamp);
+        } else if (mounted) {
+          setLogoUrl('');
+        }
+
+        setIsLoadingLogo(false);
+
+      } catch (error) {
+        console.error('[Header] Error loading settings:', error);
+        
+        if (!mounted) return;
+
+        // Retry logic with exponential backoff
+        if (retryCount < 3) {
+          const delay = Math.min(1000 * Math.pow(2, retryCount), 5000);
+          console.log(`[Header] Retrying in ${delay}ms... (attempt ${retryCount + 1}/3)`);
+          
+          retryTimeout = setTimeout(() => {
+            loadSettings(retryCount + 1);
+          }, delay);
+        } else {
+          setLogoError(true);
+          setIsLoadingLogo(false);
+          
+          // Use fallback logo from env
+          const fallbackLogo = import.meta.env.VITE_APP_LOGO || '';
+          if (fallbackLogo) {
+            setLogoUrl(fallbackLogo);
+          }
+        }
       }
     };
 
-    load();
-    return () => { mounted = false; };
-  }, [theme]);
+    loadSettings();
+
+    return () => {
+      mounted = false;
+      if (retryTimeout) clearTimeout(retryTimeout);
+    };
+  }, [theme]); // Re-fetch when theme changes
 
   // Debounce search sync
   useEffect(() => {
@@ -78,19 +157,27 @@ const Header = () => {
   };
 
   const handleSearchClick = () => {
-    if (!expanded) setExpanded(true);
-    else {
+    if (!expanded) {
+      setExpanded(true);
+    } else {
       setSearchQuery(localValue);
       setExpanded(false);
     }
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Escape') setExpanded(false);
+    if (e.key === 'Escape') {
+      setExpanded(false);
+    }
     if (e.key === 'Enter') {
       setSearchQuery(localValue);
       setExpanded(false);
     }
+  };
+
+  const handleLogoError = () => {
+    console.warn('[Header] Logo failed to load:', logoUrl);
+    setLogoError(true);
   };
 
   return (
@@ -103,33 +190,28 @@ const Header = () => {
       "
     >
       <div ref={containerRef} className="relative flex items-center justify-between px-3 py-2 sm:px-4">
-        {/* Logo (server-controlled) */}
+        {/* Logo Section */}
         <div ref={logoRef} className="flex items-center space-x-3">
-          <div className="w-30vw h-full rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800">
-            {logoUrl ? (
+          <div className="relative w-32 h-12 rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
+            {isLoadingLogo ? (
+              // Loading skeleton
+              <div className="w-full h-full animate-pulse bg-gray-300 dark:bg-gray-700" />
+            ) : logoUrl && !logoError ? (
+              // Logo image
               <img
-                id="app-logo-img"
                 src={logoUrl}
-                alt="logo"
-                className="w-full h-full object-cover"
-                onError={() => {
-                  // retry once with cache-buster to avoid stale CDN cache or transient failures
-                  if (logoRetry < 2) {
-                    setLogoRetry((r) => r + 1);
-                    setLogoUrl((s) => (s ? `${s}${s.includes('?') ? '&' : '?'}cb=${Date.now()}` : s));
-                  } else {
-                    console.warn('Failed to load logo after retries:', logoUrl);
-                  }
-                }}
+                alt="App Logo"
+                className="w-full h-full object-contain p-1 transition-opacity duration-300"
+                onError={handleLogoError}
+                loading="eager"
               />
             ) : (
-              <div className="w-full h-full" />
-            )}
-            {/* Debug: show current settings (dev) */}
-            {settingsObj && (
-              <pre className="hidden sm:block ml-2 text-xs text-gray-500 max-w-xs overflow-auto" style={{ maxHeight: 48 }}>
-                {JSON.stringify(settingsObj)}
-              </pre>
+              // Fallback when no logo
+              <div className="text-center px-2">
+                <span className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                  {import.meta.env.VITE_APP_NAME || 'App'}
+                </span>
+              </div>
             )}
           </div>
         </div>
@@ -141,10 +223,11 @@ const Header = () => {
             <div
               className="absolute flex items-center"
               style={{
-                right: '90px', // ✅ moved slightly more left (was 68px)
-                // width: expanded ? `${inputWidth}px` : '0px',
-                width: expanded ? `35vw` : '0px',
-                height: '90vh',
+                right: '90px',
+                width: expanded ? '35vw' : '0px',
+                maxWidth: expanded ? '400px' : '0px',
+                minWidth: expanded ? '200px' : '0px',
+                height: '40px',
                 opacity: expanded ? 1 : 0,
                 overflow: 'hidden',
                 transition: expanded
@@ -152,7 +235,7 @@ const Header = () => {
                   : 'width 0.45s cubic-bezier(0.55, 0, 0.1, 1), opacity 0.35s ease-out',
               }}
             >
-              <div className="flex items-center bg-white dark:bg-gray-900 rounded-xl shadow-sm px-3 py-1 ml-2 w-full">
+              <div className="flex items-center bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 px-3 py-2 ml-2 w-full">
                 <input
                   ref={inputRef}
                   value={localValue}
@@ -166,7 +249,7 @@ const Header = () => {
                     setExpanded(false);
                     setLocalValue('');
                   }}
-                  className="p-1 ml-2 hover:opacity-80 transition"
+                  className="p-1 ml-2 hover:opacity-80 transition rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
                   <X className="w-4 h-4 text-gray-500" />
                 </button>
@@ -194,7 +277,7 @@ const Header = () => {
             aria-label="Toggle theme"
             className="relative p-2.5 rounded-xl bg-gray-100/80 dark:bg-gray-800/70 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 ease-out shadow-inner"
           >
-            <div key={theme} className="animate-fadeRotate transition-transform duration-500">
+            <div key={theme} className="transition-transform duration-500">
               {theme === 'light' ? (
                 <Moon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
               ) : (
