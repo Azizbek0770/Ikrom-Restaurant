@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, startTransition } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import router from './router';
@@ -20,8 +20,14 @@ function App() {
 
   useEffect(() => {
     telegramService.init();
-    // Use checkAuth on startup so the DEV demo fallback runs when no token is present
-    checkAuth();
+    // Use checkAuth on startup as a non-urgent transition
+    try {
+      startTransition(() => {
+        checkAuth();
+      });
+    } catch (e) {
+      checkAuth();
+    }
   }, [checkAuth]);
 
   if (isLoading) {

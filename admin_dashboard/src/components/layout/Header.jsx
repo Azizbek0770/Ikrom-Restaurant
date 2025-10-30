@@ -6,6 +6,7 @@ import axios from 'axios';
 const Header = () => {
   const user = useAuthStore((state) => state.user);
   const [logoUrl, setLogoUrl] = useState('');
+  const [settingsObj, setSettingsObj] = useState(null);
 
   useEffect(() => {
     let mounted = true;
@@ -16,6 +17,7 @@ const Header = () => {
         const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
         const chosen = (prefersDark && site.logo_dark) || (!prefersDark && site.logo_light) || site.logo_url || import.meta.env.VITE_APP_LOGO || '';
         if (mounted) setLogoUrl(chosen);
+        if (mounted) setSettingsObj(site);
       } catch (err) { }
     };
     load();
@@ -38,6 +40,12 @@ const Header = () => {
             />
           ) : (
             <div className="w-8 h-8 rounded bg-gray-100" />
+          )}
+          {/* Debug: show current settings received from server (dev only) */}
+          {settingsObj && (
+            <pre className="ml-2 text-xs text-gray-500 max-w-lg overflow-auto" style={{ maxHeight: 48 }}>
+              {JSON.stringify(settingsObj)}
+            </pre>
           )}
           {/* Search or breadcrumbs can go here */}
         </div>

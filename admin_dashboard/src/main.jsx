@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { startTransition } from 'react';
 import ReactDOM from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -57,7 +57,15 @@ function AuthInitializer({ children }) {
   const checkAuth = useAuthStore((state) => state.checkAuth);
 
   useEffect(() => {
-    checkAuth();
+    // Run auth check as a non-urgent transition to avoid suspending during sync input
+    try {
+      startTransition(() => {
+        checkAuth();
+      });
+    } catch (e) {
+      // Fallback if startTransition not available
+      checkAuth();
+    }
   }, [checkAuth]);
 
   return children;

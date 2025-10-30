@@ -114,7 +114,37 @@ router.get('/site', async (req, res, next) => {
       // ignore persistence errors
     }
 
-    return res.json({ success: true, data: { settings } });
+    // If we have a supabase service client, attempt to return signed URLs for logos
+    const returned = { ...settings };
+    try {
+      const client = supabaseService || null;
+      const tryMakeSigned = async (maybeUrl) => {
+        if (!maybeUrl) return maybeUrl;
+        if (!client) return maybeUrl;
+        try {
+          // try to extract path after /storage/v1/object/public/<bucket>/:filepath
+          const m = maybeUrl.match(/\/storage\/v1\/object\/public\/(.+?)\/(.+)$/);
+          if (m && m[1] && m[2]) {
+            const bucket = m[1];
+            const filePath = `${m[2]}`.replace(/\\/g, '/');
+            const { data: signed } = await client.storage.from(bucket).createSignedUrl(filePath, 60 * 60);
+            return signed?.signedUrl || maybeUrl;
+          }
+        } catch (e) {
+          // ignore and return original
+        }
+        return maybeUrl;
+      };
+
+      if (settings.logo_light) returned.logo_light = await tryMakeSigned(settings.logo_light);
+      if (settings.logo_dark) returned.logo_dark = await tryMakeSigned(settings.logo_dark);
+      if (settings.logo_url) returned.logo_url = await tryMakeSigned(settings.logo_url);
+    } catch (e) {
+      // ignore
+    }
+
+    const raw = settingsRow && settingsRow.value ? { ...settingsRow.value } : {};
+    return res.json({ success: true, data: { settings: returned, settings_raw: raw } });
   } catch (err) { next(err); }
 });
 
@@ -129,6 +159,50 @@ router.put('/admin/site', authenticate, authorize('admin'), async (req, res, nex
       settings = await Settings.create({ key: 'site', value });
     }
     return res.json({ success: true, data: { settings: settings.value } });
+  } catch (err) { next(err); }
+});
+
+// Admin-only: list objects under a storage prefix for debugging
+router.get('/admin/storage/list', authenticate, authorize('admin'), async (req, res, next) => {
+  try {
+    const prefix = String(req.query.prefix || '').replace(/^\/+/, '');
+    if (!prefix) return res.status(400).json({ success: false, message: 'prefix query is required' });
+    if (!supabaseService && !supabaseAnon) return res.status(500).json({ success: false, message: 'Supabase client not configured' });
+
+    const client = supabaseService || supabaseAnon;
+    const bucket = SUPABASE_BUCKET;
+    const { data: listData, error: listErr } = await client.storage.from(bucket).list(prefix, { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
+    if (listErr) return res.status(500).json({ success: false, message: 'Failed to list storage', error: listErr });
+
+    const items = await Promise.all((listData || []).map(async (file) => {
+      const filePath = `${prefix}/${file.name}`.replace(/\\/g, '/');
+      let publicUrl = null;
+      try {
+        const { data: pub } = client.storage.from(bucket).getPublicUrl(filePath);
+        publicUrl = pub?.publicUrl || pub?.publicURL || `${process.env.SUPABASE_PUBLIC_URL || ''}/storage/v1/object/public/${bucket}/${filePath}`;
+      } catch (e) {
+        publicUrl = `${process.env.SUPABASE_PUBLIC_URL || ''}/storage/v1/object/public/${bucket}/${filePath}`;
+      }
+      let signedUrl = null;
+      if (supabaseService) {
+        try {
+          const { data: s } = await supabaseService.storage.from(bucket).createSignedUrl(filePath, 60 * 60);
+          signedUrl = s?.signedUrl || null;
+        } catch (e) {
+          signedUrl = null;
+        }
+      }
+      return {
+        name: file.name,
+        id: file.id,
+        size: file.size,
+        updated_at: file.updated_at,
+        publicUrl,
+        signedUrl
+      };
+    }));
+
+    return res.json({ success: true, data: { items } });
   } catch (err) { next(err); }
 });
 

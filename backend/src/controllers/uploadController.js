@@ -101,13 +101,42 @@ exports.uploadImage = async (req, res) => {
                 let settings = await Settings.findOne({ where: { key: 'site' } });
                 const prev = settings?.value || {};
                 const value = { ...prev };
-                if (type === 'settings_logo') {
-                  // generic fallback
-                  value.logo_url = imageUrl;
-                } else if (type === 'settings_logo_light') {
-                  value.logo_light = imageUrl;
-                } else if (type === 'settings_logo_dark') {
-                  value.logo_dark = imageUrl;
+                const targetKey = type === 'settings_logo' ? 'logo_url' : (type === 'settings_logo_light' ? 'logo_light' : 'logo_dark');
+                value[targetKey] = imageUrl;
+
+                // If there was a previous logo for this key, try to remove it from storage
+                try {
+                  const prevUrl = prev ? prev[targetKey] : null;
+                  if (prevUrl && supabaseService) {
+                    // Attempt to derive storage path from public URL
+                    // Patterns we expect:
+                    // 1) https://<project>.supabase.co/storage/v1/object/public/<bucket>/<path>
+                    // 2) ${SUPABASE_PUBLIC_URL}/storage/v1/object/public/<bucket>/<path>
+                    const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'uploads';
+                    let matched = null;
+                    try {
+                      const re = new RegExp(`/storage/v1/object/public/${bucket}/(.+)$`);
+                      const m = prevUrl.match(re);
+                      if (m && m[1]) matched = m[1];
+                    } catch (e) {
+                      matched = null;
+                    }
+
+                    if (matched) {
+                      try {
+                        const { error: delErr } = await supabaseService.storage.from(bucket).remove([matched]);
+                        if (delErr) {
+                          logger.warn('Failed to delete previous logo from Supabase:', delErr.message || delErr);
+                        } else {
+                          logger.info(`Deleted previous logo ${matched} from bucket ${bucket}`);
+                        }
+                      } catch (e) {
+                        logger.warn('Error while deleting previous logo from Supabase:', e.message || e);
+                      }
+                    }
+                  }
+                } catch (e) {
+                  // ignore deletion errors
                 }
 
                 if (settings) {

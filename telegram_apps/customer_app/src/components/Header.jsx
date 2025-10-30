@@ -39,6 +39,7 @@ const Header = () => {
 
   const [logoUrl, setLogoUrl] = useState('');
   const [logoRetry, setLogoRetry] = useState(0);
+  const [settingsObj, setSettingsObj] = useState(null);
 
   // Load theme-specific logo from server settings and update when theme changes
   useEffect(() => {
@@ -55,6 +56,7 @@ const Header = () => {
           : (site.logo_light || site.logo_url || import.meta.env.VITE_APP_LOGO || '');
 
         if (mounted) setLogoUrl(chosen);
+        if (mounted) setSettingsObj(site);
       } catch (err) {
         // ignore fetch errors
       }
@@ -122,6 +124,12 @@ const Header = () => {
               />
             ) : (
               <div className="w-full h-full" />
+            )}
+            {/* Debug: show current settings (dev) */}
+            {settingsObj && (
+              <pre className="hidden sm:block ml-2 text-xs text-gray-500 max-w-xs overflow-auto" style={{ maxHeight: 48 }}>
+                {JSON.stringify(settingsObj)}
+              </pre>
             )}
           </div>
         </div>
