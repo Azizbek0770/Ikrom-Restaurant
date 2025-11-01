@@ -56,9 +56,23 @@ const MapPicker = ({ initialLat, initialLng, onChange }) => {
       mapRef.current.on('click', async (ev) => {
         const { lat, lng } = ev.latlng;
         if (markerRef.current) markerRef.current.setLatLng([lat, lng]);
-        else markerRef.current = L.marker([lat, lng]).addTo(mapRef.current);
+        else markerRef.current = L.marker([lat, lng], { draggable: true }).addTo(mapRef.current);
 
-        // reverse geocode via Nominatim
+        // attach dragend handler
+        markerRef.current.on('dragend', async (e) => {
+          const p = e.target.getLatLng();
+          try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${p.lat}&lon=${p.lng}`);
+            const json = await res.json();
+            const display = json.display_name || '';
+            setAddrLabel(display);
+            if (onChange) onChange({ latitude: p.lat, longitude: p.lng, street_address: display });
+          } catch (err) {
+            if (onChange) onChange({ latitude: p.lat, longitude: p.lng, street_address: '' });
+          }
+        });
+
+        // reverse geocode via Nominatim for initial click
         try {
           const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
           const json = await res.json();
