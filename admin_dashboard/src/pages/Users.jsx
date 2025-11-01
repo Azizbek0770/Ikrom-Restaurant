@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
+import AdminUserAddresses from '@/components/AdminUserAddresses';
 import Select from '@/components/ui/Select';
 import Spinner from '@/components/ui/Spinner';
 import ImageUpload from '@/components/ui/ImageUpload';
@@ -94,6 +95,7 @@ const Users = () => {
   const [roleFilter, setRoleFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [addressesOpenFor, setAddressesOpenFor] = useState(null);
   const [preview, setPreview] = useState(null);
   const queryClient = useQueryClient();
 
@@ -200,6 +202,9 @@ const Users = () => {
                           <Button size="sm" variant="outline" onClick={() => handleEdit(u)}>
                             <Edit2 className="w-4 h-4 mr-2" />Edit
                           </Button>
+                          <Button size="sm" variant="outline" onClick={() => setAddressesOpenFor(u.id)}>
+                            Addresses
+                          </Button>
                           <Button size="sm" variant="danger" onClick={() => handleDelete(u)} isLoading={deleteMutation.isPending}>
                             <Trash2 className="w-4 h-4 mr-2" />Delete
                           </Button>
@@ -233,6 +238,11 @@ const Users = () => {
       {preview && (
         <ImageLightbox src={preview} alt="User profile photo" open={!!preview} onClose={() => setPreview(null)} />
       )}
+
+  {/* Admin user addresses modal */}
+  {addressesOpenFor && (
+    <AdminUserAddresses userId={addressesOpenFor} open={!!addressesOpenFor} onClose={() => setAddressesOpenFor(null)} />
+  )}
     </div>
   );
 };

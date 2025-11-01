@@ -16,7 +16,7 @@ import { cn } from '@/utils/cn';
 // ==========================
 const LightboxModal = ({ dishes, index, onClose, onAdd }) => {
   const [current, setCurrent] = useState(index);
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState(0);
   const [zoom, setZoom] = useState(1);
   const startX = useRef(null);
   const isSwiping = useRef(false);
@@ -41,9 +41,26 @@ const LightboxModal = ({ dishes, index, onClose, onAdd }) => {
   const next = () => setCurrent((c) => (c + 1) % dishes.length);
   const prev = () => setCurrent((c) => (c - 1 + dishes.length) % dishes.length);
 
-  const handleAddToCart = () => {
-    onAdd(dish, quantity);
-    onClose();
+  const handleAdd = () => {
+    setQuantity(1);
+    onAdd(dish, 1);
+  };
+
+  const handleIncrease = () => {
+    const newQty = quantity + 1;
+    setQuantity(newQty);
+    onAdd(dish, newQty);
+  };
+
+  const handleDecrease = () => {
+    const newQty = quantity - 1;
+    if (newQty <= 0) {
+      setQuantity(0);
+      onAdd(dish, 0);
+      return;
+    }
+    setQuantity(newQty);
+    onAdd(dish, newQty);
   };
 
   const handleTouchStart = (e) => {
@@ -68,10 +85,10 @@ const LightboxModal = ({ dishes, index, onClose, onAdd }) => {
       onClick={onClose}
     >
       <div
-        className="relative w-[95%] max-w-md bg-white/90 dark:bg-gray-900/90 rounded-2xl overflow-hidden shadow-xl animate-scaleIn"
+        className="relative w-[95%] max-w-md bg-white/95 dark:bg-gray-900/90 rounded-2xl overflow-hidden shadow-2xl animate-scaleIn"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close */}
+        {/* Close Button */}
         <button
           onClick={onClose}
           className="absolute top-3 right-3 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition z-10"
@@ -79,9 +96,9 @@ const LightboxModal = ({ dishes, index, onClose, onAdd }) => {
           <X className="w-5 h-5" />
         </button>
 
-        {/* Image */}
+        {/* Image Section */}
         <div
-          className="relative w-full h-72 overflow-hidden group touch-pan-y"
+          className="relative w-full h-80 overflow-hidden group touch-pan-y"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
@@ -124,38 +141,61 @@ const LightboxModal = ({ dishes, index, onClose, onAdd }) => {
           </div>
         </div>
 
-        {/* Info */}
+        {/* Info Section */}
         <div className="p-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{dish.name}</h2>
+          <h2 className="text-[17px] font-semibold text-gray-900 dark:text-white leading-snug">
+            {dish.name}
+          </h2>
           {dish.description && (
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{dish.description}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 leading-snug line-clamp-3">
+              {dish.description}
+            </p>
           )}
-          <p className="text-lg font-bold text-primary-600 dark:text-primary-400 mt-2">
+          <p className="text-[16px] font-bold text-primary-600 dark:text-primary-400 mt-2">
             {formatCurrency(dish.price)}
           </p>
 
+          {/* Quantity & Add Controls */}
           <div className="flex items-center justify-between mt-4">
-            <div className="flex items-center space-x-3">
+            {quantity === 0 ? (
               <button
-                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-800 dark:text-white"
-              >
-                <Minus className="w-4 h-4" />
-              </button>
-              <span className="text-lg font-semibold text-gray-900 dark:text-white">{quantity}</span>
-              <button
-                onClick={() => setQuantity((q) => q + 1)}
-                className="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center"
+                onClick={handleAdd}
+                className="flex items-center space-x-1 px-4 py-2 bg-primary-600 text-white rounded-xl font-medium text-sm hover:bg-primary-700 transition shadow-sm active:scale-95"
               >
                 <Plus className="w-4 h-4" />
+                <span>Add</span>
               </button>
-            </div>
+            ) : (
+              <div className="flex items-center bg-primary-600 text-white rounded-xl px-3 py-1.5 shadow-sm space-x-2">
+                <button
+                  onClick={handleDecrease}
+                  className="p-1 hover:bg-primary-700 rounded-full transition"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+                <span className="text-sm font-semibold w-5 text-center">{quantity}</span>
+                <button
+                  onClick={handleIncrease}
+                  className="p-1 hover:bg-primary-700 rounded-full transition"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+            )}
 
             <button
-              onClick={handleAddToCart}
-              className="px-5 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition"
+              onClick={() => {
+                onAdd(dish, quantity || 1);
+                onClose();
+              }}
+              disabled={quantity === 0}
+              className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+                quantity > 0
+                  ? 'bg-green-600 text-white hover:bg-green-700'
+                  : 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
+              }`}
             >
-              Add to Cart
+              {quantity > 0 ? 'Confirm' : 'Add to Cart'}
             </button>
           </div>
         </div>
@@ -163,60 +203,114 @@ const LightboxModal = ({ dishes, index, onClose, onAdd }) => {
     </div>
   );
 };
-
 // ==========================
-// MenuItem
+// MenuItem (Stable Quantity Logic + Optimized Layout)
 // ==========================
 const MenuItem = ({ item, onAddToCart, onImageClick, topRank }) => {
+  const [quantity, setQuantity] = useState(0);
   const [isAdding, setIsAdding] = useState(false);
 
   const handleAdd = () => {
     setIsAdding(true);
     telegramService.hapticImpact('light');
-    onAddToCart(item);
-    setTimeout(() => setIsAdding(false), 300);
+    setTimeout(() => {
+      setQuantity(1);
+      onAddToCart(item, 1);
+      setIsAdding(false);
+    }, 200);
+  };
+
+  const handleIncrease = () => {
+    const newQty = quantity + 1;
+    setQuantity(newQty);
+    onAddToCart(item, newQty);
+  };
+
+  const handleDecrease = () => {
+    const newQty = quantity - 1;
+    if (newQty <= 0) {
+      setQuantity(0);
+      onAddToCart(item, 0);
+      return;
+    }
+    setQuantity(newQty);
+    onAddToCart(item, newQty);
   };
 
   return (
-    <div className="relative bg-white/80 dark:bg-gray-900/70 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-md transition-all">
+    <div className="relative bg-white/90 dark:bg-gray-900/80 rounded-2xl shadow-sm border border-gray-200/80 dark:border-gray-800/80 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
       {topRank && (
-        <div className="absolute top-2 left-2 z-10 bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-lg shadow-lg flex items-center gap-1 animate-topBadge">
-          <span className="text-sm">🔥</span>
+        <div className="absolute top-2 left-2 z-10 bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-md flex items-center gap-1 animate-topBadge">
+          <span>🔥</span>
           <span>TOP {topRank}</span>
         </div>
       )}
-      <img
-        src={item.image_url}
-        alt={item.name}
-        className="w-full h-48 object-cover cursor-pointer hover:scale-105 transition-transform duration-300"
-        onClick={onImageClick}
-      />
-      <div className="p-3">
-        <h3 className="font-semibold text-gray-900 dark:text-white truncate">{item.name}</h3>
-        {item.description && (
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{item.description}</p>
-        )}
-        <div className="flex items-center justify-between mt-1">
-          <p className="text-lg font-bold text-primary-600 dark:text-primary-400">
+
+      {/* Image */}
+      <div className="relative">
+        <img
+          src={item.image_url}
+          alt={item.name}
+          className="w-full h-52 object-cover cursor-pointer transition-transform duration-300 hover:scale-105"
+          onClick={onImageClick}
+        />
+      </div>
+
+      {/* Info Section */}
+      <div className="p-3 pt-2 flex flex-col justify-between min-h-[115px]">
+        <div>
+          <h3 className="font-semibold text-[15px] text-gray-900 dark:text-white truncate leading-tight">
+            {item.name}
+          </h3>
+          {item.description && (
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 line-clamp-2 leading-snug">
+              {item.description}
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between mt-2">
+          <p className="text-[15px] font-bold text-primary-600 dark:text-primary-400">
             {formatCurrency(item.price)}
           </p>
-          <button
-            onClick={handleAdd}
-            disabled={isAdding}
-            className={cn(
-              'flex items-center space-x-1 px-3 py-1.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all text-sm shadow-sm',
-              isAdding && 'scale-95'
-            )}
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add</span>
-          </button>
+
+          {/* Add / Quantity Controls */}
+          {quantity === 0 ? (
+            <button
+              onClick={handleAdd}
+              disabled={isAdding}
+              className={cn(
+                "flex items-center space-x-1 px-2.5 py-1 bg-primary-600 text-white rounded-lg hover:bg-primary-700 active:scale-95 transition-all duration-200 text-xs font-medium shadow-sm",
+                isAdding && "opacity-80 cursor-wait"
+              )}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add</span>
+            </button>
+          ) : (
+            <div className="flex items-center bg-primary-600 text-white rounded-lg shadow-sm px-2 py-1 space-x-2">
+              <button
+                onClick={handleDecrease}
+                className="p-1 hover:bg-primary-700 rounded-full transition"
+              >
+                <Minus className="w-3 h-3" />
+              </button>
+              <span className="text-xs font-semibold w-4 text-center">
+                {quantity}
+              </span>
+              <button
+                onClick={handleIncrease}
+                className="p-1 hover:bg-primary-700 rounded-full transition"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
-
 // ==========================
 // Banner Carousel Component
 // ==========================

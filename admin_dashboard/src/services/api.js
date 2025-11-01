@@ -90,6 +90,14 @@ export const usersAPI = {
   delete: (id) => api.delete(`/users/${id}`)
 };
 
+// Admin: addresses management for a specific user
+export const adminAddressesAPI = {
+  getAll: (userId) => api.get(`/admin/users/${userId}/addresses`),
+  create: (userId, data) => api.post(`/admin/users/${userId}/addresses`, data),
+  update: (userId, id, data) => api.put(`/admin/users/${userId}/addresses/${id}`, data),
+  delete: (userId, id) => api.delete(`/admin/users/${userId}/addresses/${id}`)
+};
+
 // Categories API
 export const categoriesAPI = {
   getAll: (params) => api.get('/categories', { params }),

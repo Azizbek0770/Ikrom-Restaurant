@@ -24,6 +24,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const userRoutes = require('./routes/userRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const indexRoutes = require('./routes/index');
+const adminAddressRoutes = require('./routes/adminAddressRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -208,6 +209,8 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api', indexRoutes);
+// Admin address management
+app.use('/api/admin', adminAddressRoutes);
 
 // --- 404 and Error Handlers ---
 app.use(notFound);
