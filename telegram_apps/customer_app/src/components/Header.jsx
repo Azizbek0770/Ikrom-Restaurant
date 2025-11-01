@@ -21,7 +21,9 @@ const Header = () => {
   const [logoUrl, setLogoUrl] = useState('');
   const [logoError, setLogoError] = useState(false);
   const [settingsData, setSettingsData] = useState(null);
+  const [settingsRaw, setSettingsRaw] = useState(null);
   const [isLoadingLogo, setIsLoadingLogo] = useState(true);
+  const [logoRetryCount, setLogoRetryCount] = useState(0);
 
   // Compute available width for expanding input
   useEffect(() => {
@@ -57,59 +59,16 @@ const Header = () => {
         setIsLoadingLogo(true);
         setLogoError(false);
 
-        const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
-        const endpoint = baseUrl ? `${baseUrl}/settings/site` : '/settings/site';
-        
-        console.log('[Header] Fetching settings from:', endpoint);
-        
-        const response = await axios.get(endpoint, {
-          timeout: 10000,
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          }
-        });
-
-        if (!mounted) return;
-
-        const settings = response?.data?.data?.settings || response?.data?.settings || response?.data || {};
-        
-        console.log('[Header] Settings received:', settings);
-        setSettingsData(settings);
-
-        // Determine which logo to use based on theme
-        let selectedLogo = '';
-        
-        if (theme === 'dark') {
-          selectedLogo = settings.logo_dark || settings.logoDark || '';
-        } else {
-          selectedLogo = settings.logo_light || settings.logoLight || '';
+        // Use traditional local assets from each app's public/assets folder.
+        // Vite serves `public` at the server root, so assets are available at `/assets/...`.
+        const base = (import.meta.env.BASE_URL || '').replace(/\/$/, '');
+        const localLogo = theme === 'dark' ? `${base}/assets/logo_dark.png` : `${base}/assets/logo_light.png`;
+        if (mounted) {
+          setSettingsData({});
+          setSettingsRaw(null);
+          setLogoUrl(localLogo);
+          setIsLoadingLogo(false);
         }
-
-        // Fallback to default logo if theme-specific not available
-        if (!selectedLogo) {
-          selectedLogo = settings.logo_url || settings.logoUrl || settings.logo || '';
-        }
-
-        // Final fallback to env variable
-        if (!selectedLogo) {
-          selectedLogo = import.meta.env.VITE_APP_LOGO || '';
-        }
-
-        console.log(`[Header] Selected logo for ${theme} theme:`, selectedLogo);
-
-        if (selectedLogo && mounted) {
-          // Add timestamp to prevent caching issues
-          const logoWithTimestamp = selectedLogo.includes('?') 
-            ? `${selectedLogo}&t=${Date.now()}`
-            : `${selectedLogo}?t=${Date.now()}`;
-          
-          setLogoUrl(logoWithTimestamp);
-        } else if (mounted) {
-          setLogoUrl('');
-        }
-
-        setIsLoadingLogo(false);
 
       } catch (error) {
         console.error('[Header] Error loading settings:', error);
@@ -177,6 +136,28 @@ const Header = () => {
 
   const handleLogoError = () => {
     console.warn('[Header] Logo failed to load:', logoUrl);
+    // Try fallback strategy: if we had a signed URL, try the raw public URL from settings_raw
+    if (logoRetryCount === 0) {
+      // prefer explicit raw settings returned from backend
+      const fallbackRaw = settingsRaw?.logo_light || settingsRaw?.logo_dark || settingsRaw?.logo_url || null;
+      if (fallbackRaw) {
+        setLogoRetryCount((c) => c + 1);
+        setLogoError(false);
+        setLogoUrl(fallbackRaw);
+        return;
+      }
+
+      // Otherwise try any non-signed URL from settingsData
+      const candidate = settingsData?.logo_light || settingsData?.logo_dark || settingsData?.logo_url || '';
+      if (candidate && !/\/object\/sign\//.test(candidate)) {
+        setLogoRetryCount((c) => c + 1);
+        setLogoError(false);
+        setLogoUrl(candidate);
+        return;
+      }
+    }
+
+    // If we get here, mark error and fall back to env logo
     setLogoError(true);
   };
 
@@ -192,7 +173,7 @@ const Header = () => {
       <div ref={containerRef} className="relative flex items-center justify-between px-3 py-2 sm:px-4">
         {/* Logo Section */}
         <div ref={logoRef} className="flex items-center space-x-3">
-          <div className="relative w-32 h-12 rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
+          <div className="relative w-37 h-16 rounded-xl overflow-hidden flex items-center justify-center">
             {isLoadingLogo ? (
               // Loading skeleton
               <div className="w-full h-full animate-pulse bg-gray-300 dark:bg-gray-700" />
@@ -204,6 +185,7 @@ const Header = () => {
                 className="w-full h-full object-contain p-1 transition-opacity duration-300"
                 onError={handleLogoError}
                 loading="eager"
+                crossOrigin="anonymous"
               />
             ) : (
               // Fallback when no logo

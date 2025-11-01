@@ -72,10 +72,6 @@ const router = createBrowserRouter([
         element: React.createElement(React.lazy(() => import('./pages/News')))
       },
       {
-        path: 'settings',
-        element: React.createElement(React.lazy(() => import('./pages/Settings')))
-      },
-      {
         path: 'banners',
         element: React.createElement(React.lazy(() => import('./pages/Banners')))
       }

@@ -63,6 +63,14 @@ const router = createBrowserRouter([
         element: <Addresses />
       },
       {
+        path: 'addresses/new',
+        element: React.createElement(React.lazy(() => import('./pages/AddressForm')))
+      },
+      {
+        path: 'addresses/edit/:id',
+        element: React.createElement(React.lazy(() => import('./pages/AddressForm')))
+      },
+      {
         path: 'debug',
         element: <Debug />
       }

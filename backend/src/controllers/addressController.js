@@ -1,4 +1,5 @@
 const { Address } = require('../models');
+const { Op } = require('sequelize');
 const { logger } = require('../config/database');
 
 // Get user addresses
@@ -63,6 +64,14 @@ const createAddress = async (req, res, next) => {
       delivery_instructions
     } = req.body;
 
+    // Basic server-side validation: require latitude & longitude and delivery_instructions
+    if (!latitude || !longitude) {
+      return res.status(400).json({ success: false, message: 'Latitude and longitude are required' });
+    }
+    if (!delivery_instructions || !String(delivery_instructions).trim()) {
+      return res.status(400).json({ success: false, message: 'Delivery instructions (description) are required' });
+    }
+
     // If this is set as default, unset other defaults
     if (is_default) {
       await Address.update(
@@ -113,6 +122,14 @@ const updateAddress = async (req, res, next) => {
         success: false,
         message: 'Address not found'
       });
+    }
+
+    // Server-side validation: if latitude/longitude or delivery_instructions present, require both
+    if ((updates.latitude && !updates.longitude) || (!updates.latitude && updates.longitude)) {
+      return res.status(400).json({ success: false, message: 'Both latitude and longitude must be provided' });
+    }
+    if (updates.delivery_instructions !== undefined && !String(updates.delivery_instructions).trim()) {
+      return res.status(400).json({ success: false, message: 'Delivery instructions (description) cannot be empty' });
     }
 
     // If setting as default, unset other defaults

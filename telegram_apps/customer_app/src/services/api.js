@@ -82,6 +82,7 @@ export const newsAPI = {
 
 export const addressesAPI = {
   getAll: () => api.get('/addresses'),
+  getOne: (id) => api.get(`/addresses/${id}`),
   create: (data) => api.post('/addresses', data),
   update: (id, data) => api.put(`/addresses/${id}`, data),
   delete: (id) => api.delete(`/addresses/${id}`),

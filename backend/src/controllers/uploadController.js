@@ -93,63 +93,12 @@ exports.uploadImage = async (req, res) => {
             return res.status(200).json({ success: true, data: { url: imageUrl, resource: user } });
           }
           // App logo upload shortcut: support settings_logo, settings_logo_light, settings_logo_dark
+          // Settings logo uploads are disabled. Use static assets at backend/public/assets for logos.
           if (type === 'settings_logo' || type === 'settings_logo_light' || type === 'settings_logo_dark') {
-            try {
-              const Settings = require('../models/Settings');
-              if (Settings) {
-                // Upsert a single-row settings record
-                let settings = await Settings.findOne({ where: { key: 'site' } });
-                const prev = settings?.value || {};
-                const value = { ...prev };
-                const targetKey = type === 'settings_logo' ? 'logo_url' : (type === 'settings_logo_light' ? 'logo_light' : 'logo_dark');
-                value[targetKey] = imageUrl;
-
-                // If there was a previous logo for this key, try to remove it from storage
-                try {
-                  const prevUrl = prev ? prev[targetKey] : null;
-                  if (prevUrl && supabaseService) {
-                    // Attempt to derive storage path from public URL
-                    // Patterns we expect:
-                    // 1) https://<project>.supabase.co/storage/v1/object/public/<bucket>/<path>
-                    // 2) ${SUPABASE_PUBLIC_URL}/storage/v1/object/public/<bucket>/<path>
-                    const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'uploads';
-                    let matched = null;
-                    try {
-                      const re = new RegExp(`/storage/v1/object/public/${bucket}/(.+)$`);
-                      const m = prevUrl.match(re);
-                      if (m && m[1]) matched = m[1];
-                    } catch (e) {
-                      matched = null;
-                    }
-
-                    if (matched) {
-                      try {
-                        const { error: delErr } = await supabaseService.storage.from(bucket).remove([matched]);
-                        if (delErr) {
-                          logger.warn('Failed to delete previous logo from Supabase:', delErr.message || delErr);
-                        } else {
-                          logger.info(`Deleted previous logo ${matched} from bucket ${bucket}`);
-                        }
-                      } catch (e) {
-                        logger.warn('Error while deleting previous logo from Supabase:', e.message || e);
-                      }
-                    }
-                  }
-                } catch (e) {
-                  // ignore deletion errors
-                }
-
-                if (settings) {
-                  await settings.update({ value });
-                } else {
-                  settings = await Settings.create({ key: 'site', value });
-                }
-
-                return res.status(200).json({ success: true, data: { url: imageUrl, resource: settings } });
-              }
-            } catch (errSettings) {
-              // ignore, fallthrough to returning upload info
-            }
+            return res.status(400).json({
+              success: false,
+              message: 'Logo uploads for settings are disabled. Place your logos in backend/public/assets and restart the server.'
+            });
           }
         } catch (errAttach) {
           logger.error('Failed to attach image to resource:', errAttach);

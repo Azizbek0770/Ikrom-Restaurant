@@ -10,11 +10,15 @@ const Header = () => {
     const load = async () => {
       try {
         const resp = await axios.get((import.meta.env.VITE_API_BASE_URL || '') + '/settings/site');
-        const site = resp?.data?.data?.settings || {};
-        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const chosen = (prefersDark && site.logo_dark) || (!prefersDark && site.logo_light) || site.logo_url || import.meta.env.VITE_APP_LOGO || '';
-        if (mounted) setLogoUrl(chosen);
-        if (mounted) setSettingsObj(site);
+        // Use local app assets from public/assets
+        const base = (import.meta.env.BASE_URL || '').replace(/\/$/, '');
+        const localLogo = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+          ? `${base}/assets/logo_dark.png`
+          : `${base}/assets/logo_light.png`;
+        if (mounted) {
+          setLogoUrl(localLogo);
+          setSettingsObj(resp?.data?.data?.settings || {});
+        }
       } catch (err) { }
     };
     load();
@@ -30,6 +34,7 @@ const Header = () => {
           alt="logo"
           className="w-10 h-10 rounded"
           onError={() => console.warn('Delivery logo failed to load:', logoUrl)}
+          crossOrigin="anonymous"
         />
       ) : (
         <div className="w-10 h-10 rounded bg-white/20" />

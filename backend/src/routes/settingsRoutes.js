@@ -9,7 +9,10 @@ const SUPABASE_BUCKET = process.env.SUPABASE_STORAGE_BUCKET || 'uploads';
 // GET /api/settings/site - public
 router.get('/site', async (req, res, next) => {
   try {
+    const origin = req.get('origin') || 'no-origin';
+    console.log(`[/api/settings/site] Request from origin: ${origin}`);
     const settingsRow = await Settings.findOne({ where: { key: 'site' } });
+    console.log(`[/api/settings/site] settingsRow present: ${!!settingsRow}`);
     let settings = settingsRow ? settingsRow.value || {} : {};
 
     // If logos are missing but Supabase is configured, try to discover public URLs from storage
@@ -115,7 +118,18 @@ router.get('/site', async (req, res, next) => {
     }
 
     // If we have a supabase service client, attempt to return signed URLs for logos
+    // Compute a public base URL to reference backend-served assets. Prefer X-Forwarded headers
+    // (ngrok / proxies) then fall back to API_BASE_URL env, then to host header.
+    const forwardedHost = (req.get('x-forwarded-host') || req.get('x-forwarded-server') || req.get('host'));
+    const forwardedProto = (req.get('x-forwarded-proto') || req.get('x-forwarded-protocol') || req.protocol || (process.env.ENABLE_HTTPS ? 'https' : 'http'));
+    const baseFromReq = forwardedHost ? `${forwardedProto.replace(/:.+$/, '')}://${forwardedHost}` : '';
+    const envBase = process.env.API_BASE_URL ? process.env.API_BASE_URL.replace(/\/$/, '') : '';
+    const baseApi = baseFromReq || envBase || '';
+
     const returned = { ...settings };
+    // Override logo URLs to point to static assets managed by backend/public/assets
+    returned.logo_light = `${baseApi}/assets/logo_light.png`;
+    returned.logo_dark = `${baseApi}/assets/logo_dark.png`;
     try {
       const client = supabaseService || null;
       const tryMakeSigned = async (maybeUrl) => {
@@ -144,6 +158,7 @@ router.get('/site', async (req, res, next) => {
     }
 
     const raw = settingsRow && settingsRow.value ? { ...settingsRow.value } : {};
+    console.log('[/api/settings/site] returning settings:', Object.keys(returned));
     return res.json({ success: true, data: { settings: returned, settings_raw: raw } });
   } catch (err) { next(err); }
 });

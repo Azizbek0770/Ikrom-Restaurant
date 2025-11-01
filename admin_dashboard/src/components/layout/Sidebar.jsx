@@ -25,8 +25,7 @@ const Sidebar = () => {
     { name: 'Banners', href: '/banners', icon: ImageIcon },
     { name: 'Orders', href: '/orders', icon: ShoppingBag },
     { name: 'Deliveries', href: '/deliveries', icon: Truck },
-    { name: 'Users', href: '/users', icon: Users },
-    { name: 'Settings', href: '/settings', icon: Settings }
+    { name: 'Users', href: '/users', icon: Users }
   ];
 
   return (

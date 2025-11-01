@@ -75,15 +75,23 @@ io.on('connection', (socket) => {
 });
 
 // --- Middleware ---
-app.use(helmet());
+// Configure Helmet but relax the default contentSecurityPolicy and resource policy for API responses
+// so externally-hosted assets (e.g. Supabase storage) can be loaded by clients during development.
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' }
+}));
 
 // Fast-path: respond to API preflight OPTIONS immediately to avoid proxy 502s
 app.use((req, res, next) => {
-  if (req.method === 'OPTIONS' && req.path && req.path.startsWith('/api/')) {
+    if (req.method === 'OPTIONS' && req.path && req.path.startsWith('/api/')) {
     res.set('Access-Control-Allow-Origin', req.get('origin') || '*');
     res.set('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, ngrok-skip-browser-warning');
+    // include Cache-Control and Pragma since some browsers include them on preflight requests
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, ngrok-skip-browser-warning, Cache-Control, Pragma');
     res.set('Access-Control-Allow-Credentials', 'true');
+    // Ensure Vary header is present so caches honor dynamic ACAO
+    res.set('Vary', 'Origin');
     return res.sendStatus(204);
   }
   return next();
@@ -100,7 +108,9 @@ app.use(
 
       if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
         console.log('✅ Origin allowed:', origin);
-        return callback(null, true);
+        // Explicitly echo the incoming origin back in the Access-Control-Allow-Origin header
+        // instead of boolean `true` to ensure consistent ACAO values between preflight and actual responses.
+        return callback(null, origin);
       } else {
         // Log blocked origin and return falsy result rather than throwing an error
         console.log('❌ Origin blocked by CORS:', origin);
@@ -108,10 +118,22 @@ app.use(
       }
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'ngrok-skip-browser-warning'],
+    // include Cache-Control and Pragma because some clients (and browsers) send them on preflight
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'ngrok-skip-browser-warning', 'Cache-Control', 'Pragma'],
     credentials: true,
   })
 );
+
+// Basic API request logger to aid debugging of preflight and actual requests
+app.use('/api', (req, res, next) => {
+  try {
+    const origin = req.get('origin') || 'no-origin';
+    console.log(`🔁 [API LOG] ${new Date().toISOString()} ${req.method} ${req.originalUrl} Origin=${origin} Headers=${Object.keys(req.headers).join(',')}`);
+  } catch (e) {
+    // ignore logging errors
+  }
+  return next();
+});
 
 // Handle preflight explicitly to avoid 502s from proxies rejecting OPTIONS
 app.options('/api/*', (req, res) => {
@@ -170,6 +192,10 @@ if (fs.existsSync(customerDist)) {
   });
   logger.info('Serving customer SPA from backend at /customer');
 }
+
+// Serve static site assets (favicon, static logos) from backend/public/assets
+const assetsDir = path.join(__dirname, '../../public/assets');
+app.use('/assets', express.static(assetsDir));
 
 // --- API Routes ---
 app.use('/api/auth', authRoutes);
@@ -241,6 +267,20 @@ const startServer = async () => {
     initializeTelegramBots();
 
     // --- Start server ---
+    // Before starting, validate presence of platform-wide static assets and warn if missing
+    try {
+      const assetsPath = path.join(__dirname, '../../public/assets');
+      const requiredFiles = ['favicon.ico', 'logo_light.png', 'logo_dark.png'];
+      const missing = requiredFiles.filter((f) => !fs.existsSync(path.join(assetsPath, f)));
+      if (missing.length) {
+        logger.warn(`Static asset check: missing files in ${assetsPath}: ${missing.join(', ')}. Place files there or the UI will show fallbacks.`);
+      } else {
+        logger.info('Static asset check: all required assets present.');
+      }
+    } catch (e) {
+      logger.warn('Static asset check failed:', e.message || e);
+    }
+
     server.listen(PORT, () => {
       logger.info(`✅ Server running on port ${PORT}`);
       logger.info(`✅ Environment: ${process.env.NODE_ENV}`);
